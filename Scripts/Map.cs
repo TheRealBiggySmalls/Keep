@@ -8,6 +8,7 @@ public class Map : MonoBehaviour {
 
 	//make map stay around after being rendered once
 	public GameObject hexPrefab;
+	public GameObject selectionPrefab;
 	public GameObject hexTop;
 	public GameObject Boy;
 	public Character player;
@@ -18,7 +19,7 @@ public class Map : MonoBehaviour {
 	//ONLY need top meshes. Change colour of base hex but it's always the same. Change mesh
 	//of topHex
 	public Mesh MeshWater;//DEFAULT hex mesh (hex11)
-	public Mesh TopMountain; public Mesh houseMesh; public Mesh[] TopDesert; public Mesh[] TopForest; public Mesh[] TopPlains; public Mesh[] TopSnow;
+	public Mesh TopMountain; public Mesh selectableMesh; public Mesh houseMesh; public Mesh[] TopDesert; public Mesh[] TopForest; public Mesh[] TopPlains; public Mesh[] TopSnow;
 	public Material MatOcean;public Material MatPlains;public Material MatDesert;public Material MatMountains;public Material MatForest;public Material MatGrasslands;public Material MatSnow;
 
 	//tiles with height above ____ are considered ____
@@ -48,16 +49,18 @@ public class Map : MonoBehaviour {
 		//a new array and are never interacted with
 		PlaceBoy(Boy, 12, 11);
 		FocusCameraOnBoy();
+		highlightSelectableTiles(player.currentHex);
+		ChangeResourceText.UpdateUIResources(player.Food,player.Water, player.Honey);
+		//rerandomises the seed so debugging isnt no fun
+		Random.InitState(System.Environment.TickCount);
 	}
 
+	//HAVE A BUTTON THAT IS THE GAME MANAGER. ORGANISES ALL THINGS WHEN CLICKED
+	
 	void Update(){
-		//TEST: hit spacebar to advance to next turn
-		if(Input.GetKeyDown(KeyCode.Space)){
-			if(player!=null){
-				player.doTurn();
-			}
-		}
+
 	}
+
 
 	public Hex GetHexAt(int x, int y){
 		if(hexes == null){
@@ -107,6 +110,7 @@ public class Map : MonoBehaviour {
 			for (int row = 0; row < numRows; row++) {
 
 				Hex h = new Hex(this,col,row);
+
 				h.Elevation = -0.5f; //-1 is default elevation for water
 				hexes[col,row] = h;
 
@@ -124,6 +128,8 @@ public class Map : MonoBehaviour {
 				hexGo.name = string.Format("HEX: {0}, {1}", col, row);
 				hexGo.GetComponent<HexComponent>().hex = h;
 				hexGo.GetComponent<HexComponent>().hexMap = this;
+
+				//basic food and water assignment
 
 				hexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0},{1}", col, row);
 				
@@ -217,7 +223,13 @@ public class Map : MonoBehaviour {
 					mf.mesh = MeshWater;
 				}
 				//mf.mesh=MeshWater;
+
+				if(h.foodCost==0||h.waterCost==0){
+					//calculateResourceCost()
+				}
 			}
+
+			//this function is NOT called every frame. Only at the start when map is generated
 		}
 	}
 
@@ -230,6 +242,20 @@ public class Map : MonoBehaviour {
 			}
 		}
 		return results.ToArray();
+	}
+
+	public Hex[] getNeighbours(Hex centreHex){
+		List<Hex> neighbours = new List<Hex>();
+		int q = centreHex.Q; int r = centreHex.R;
+
+		neighbours.Add(GetHexAt(q-1,r+1)); //to the top left
+		neighbours.Add(GetHexAt(q,r+1)); //to the top right
+		neighbours.Add(GetHexAt(q-1,r)); //to the left
+		neighbours.Add(GetHexAt(q+1,r)); //to the right
+		neighbours.Add(GetHexAt(q,r-1)); //to the bottom left
+		neighbours.Add(GetHexAt(q+1,r-1)); //to the bottom right
+
+		return neighbours.ToArray();
 	}
 
 	public void PlaceBoy(GameObject preFab, int q, int r){
@@ -270,5 +296,40 @@ public class Map : MonoBehaviour {
 		MeshFilter mf = t.GetComponentInChildren<MeshFilter>();
 
 		mf.mesh = houseMesh;
+	}
+
+
+	List<GameObject> selectables;
+
+	//HERE: instantiate a new game object where they are using the prefab, so highlight should
+	//show up in same place. THEN delete the new object after move
+	public void highlightSelectableTiles(Hex hex){
+		if(selectables==null){
+			selectables = new List<GameObject>();
+		}
+		Hex[] highlight = getNeighbours(hex);
+
+		//TODO: dont highlight all neighbours, only legal moves
+		foreach(Hex hexa in highlight){			
+			if(player.checkIllegalTiles(hexa)&&player.checkResourcesSufficient(hexa)){
+				GameObject inst = (GameObject)Instantiate(selectionPrefab,hexa.Position(),Quaternion.identity);
+				MeshFilter mf = inst.GetComponentInChildren<MeshFilter>();
+				mf.mesh = selectableMesh;
+				selectables.Add(inst);
+			}
+		}
+	}
+
+	//TODO: have a variable that tracks old player position so if they move then dont execute 
+	//either of these code blocks
+	public void deleteOldSelectables(){
+		//WHY is selectables null all the time
+		if(selectables==null || selectables.Count<1){
+			return;
+		}
+		//might be something wrong with indexing?
+		foreach(GameObject obj in selectables){
+			GameObject.Destroy(obj);
+		}
 	}
 }

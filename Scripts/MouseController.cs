@@ -56,17 +56,21 @@ public class MouseController : MonoBehaviour {
 			lastMouseGroundPlanePosition = CheckHitPos(Input.mousePosition);
 			Update_CurrentFunction();
 
-		}else if(Input.GetMouseButton(1)){//characterSelected!=null && ){
+		}else if(Input.GetMouseButtonUp(1)){//characterSelected!=null && ){
 			//at the moment just want to move character if we are a right click
 			Debug.Log("Updating character movement");
+			//TODO: fix charactermovement updating multiple times
 			Update_CharacterMovement();
 		}
 	}
 
 	void Update_CharacterMovement(){
+
 		//if this is called call updateCameraFollow or something so that the camera
 		//follows the player as he moves
-	
+
+		//Raycast works fine. NotInNeighbours triggers it is called twice for whatever reason
+		//so the moved to tile counts
 		GameObject hitObject = GetHexHit();
 		if(hitObject==null){
 			Debug.Log("Raycast did not hit a game object: UpdateCharacterMovement");
@@ -74,34 +78,29 @@ public class MouseController : MonoBehaviour {
 		}
 
 		if(hitObject.GetComponentInChildren<HexComponent>()!=null){
+			Map map = hitObject.GetComponentInChildren<HexComponent>().hexMap;
 			if(characterSelected==null){
-				Map map = hitObject.GetComponentInChildren<HexComponent>().hexMap;
 				characterSelected = map.player;
 			}
+			
 			//initialise character
 			characterSelected.moveToHex(hitObject.GetComponentInChildren<HexComponent>().hex);
+			ChangeResourceText.UpdateUIResources(characterSelected.Food,characterSelected.Water,characterSelected.Honey);
+
+			//Create a new random event for that tile!
+			//Currently randomises so events only occur about one third of the time
 
 		}
 		//TODO: Change mesh of neighbours to be highlighted for selection
 		//THESE SHOULD BE HIGHLIGHTED AT ALL TIMES
-
+	
+		//maybe shouldnt set this here
 		CancelUpdateFunction();
 		return;
 	}
 
 	void Update_CameraDrag () {
-		//DO SOME CODE FOR IF IT HITS AND DOES NOT DRAG
-		/*RaycastHit hitInfo;
-		if( Physics.Raycast(mouseRay, out hitInfo) ) {
-			GameObject ourHitObject = hitInfo.collider.transform.parent.gameObject;
-			if(ourHitObject.GetComponent<HexComponent>() != null) {
-				// Ah! We are over a hex!
-				Debug.Log("Raycast hit: " + ourHitObject.name );
-				if(Input.GetMouseButtonDown(0)) {
-					AlertSection.NewAlert("default","default",ourHitObject);
-				}
-			}
-		}*/
+
 		if(Input.GetMouseButtonUp(0)){
 			CancelUpdateFunction();
 			return;
@@ -172,6 +171,7 @@ public class MouseController : MonoBehaviour {
 		RaycastHit hitInfo;
 		if( Physics.Raycast(mouseRay, out hitInfo) ) {
 			GameObject ourHitObject = hitInfo.collider.transform.parent.gameObject;
+			Debug.Log("Raycast hit: " + ourHitObject);
 			return ourHitObject;
 		}
 		return null;
