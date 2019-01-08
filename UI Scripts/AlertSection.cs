@@ -29,9 +29,9 @@ public class AlertSection : MonoBehaviour {
 	//default parameters
 	public static void NewAlert(string alertTextId, string iconId="", GameObject focusGameObject=null){
 		
-		string alertText = "test"; //change this to be dictionary of enums or whatever
+		//string alertText = "test"; //change this to be dictionary of enums or whatever
 		GameObject alertGo = (GameObject)Instantiate(instance.alertFab);
-		alertGo.GetComponentInChildren<Text>().text = alertText;
+		alertGo.GetComponentInChildren<Text>().text = alertTextId;
 		//TODO: set icon
 		//TODO: cache reference to game object to focus on
 		alertGo.transform.SetParent(instance.alertList.transform);

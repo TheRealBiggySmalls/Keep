@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using QPath;
+using UnityEngine.UI;
 
 public class Character {
 
@@ -14,14 +15,9 @@ public class Character {
 	public int movement = 1;
 	public int movementRemaining = 1;
 
+
 	public delegate void CharacterMovedDelegate (Hex oldHex, Hex newHex);
 	public CharacterMovedDelegate OnCharacterMoved;
-
-	//We are implementing path finding even though we dont really need it
-	Queue<Hex> hexPath;
-
-	//TODO: this should probably be moved to some kind of central config
-	const bool MOVEMENT_RULES_LIKE_CIV6 = false;
 
 	/*
 	//HAVE A VARIABLE THAT INCREASES YEILD CHANCE FROM TILES???
@@ -36,147 +32,103 @@ public class Character {
 		Hex oldHex = currentHex;
 		currentHex = newHex;
 
+		//NOW: factor in resource costs. Should put somewhere AFTER move so that moving to a 
+		//tile can happen if you wont have enough resources to move after move
+
 		if(OnCharacterMoved != null){
 			OnCharacterMoved(oldHex, newHex);
 		}
 	}
 
-	public void SetHexPath(Hex[] path){
-		this.hexPath = new Queue<Hex>(hexPath);
-	}
-
-	public void doTurn(){
-		
-		//movement doesnt currently work as hex queue is empty
-		if(hexPath==null || hexPath.Count == 0){
-			return;
-		}	
-
-		Hex newHex = hexPath.Dequeue();
-		//Test moving one to the right.
-		//TODO: write in rules for not allowing travel to water tiles (check elevation)
-		//TODO: highlight tiles that can be moved to
-		//TODO: link to mouse click
-
-		//FIRST: check for illegal tiles (eg. water)
-		//SECOND: check resources are sufficient for travel
-		SetHex(newHex);
-	}
-
 	public void moveToHex(Hex destinationTile){
-		//WE HAVE CURRENT HEX FOR sourceTile
-		Debug.Log("ATTEMPT TO MOVE TO HEX:" + destinationTile);
+		//this is pretty messy, ideally character would not have information of these things
+		Map map = destinationTile.hexMap;
+		GameObject tile = map.hexToGameObjectMap[destinationTile];
+
 		//in each of these create a new alert if tile violates one of their rules
-		checkIllegalTiles(destinationTile);
-		checkTileInNeighbours();
-		checkResourcesSufficient();
+		if(!checkIllegalTiles(destinationTile)){
+			AlertSection.NewAlert("Illegal Tile!","default",tile);
+			return;
+		}
+
+		if(!checkTileInNeighbours(destinationTile, map)){
+			AlertSection.NewAlert("Tile not in neighbours!","default",map.hexToGameObjectMap[destinationTile]);
+			return;
+		}
+
+		if(!checkResourcesSufficient(destinationTile)){
+			AlertSection.NewAlert("Resources insufficient for travel!","default",map.hexToGameObjectMap[destinationTile]);
+			return;
+		}
+
+		//have to pass as negative as we are taking these away as movement cost
+		UpdateResources(-destinationTile.foodCost,-destinationTile.waterCost);
+
+		//updates and resets event costs
+		UpdateResources(ScenarioManager.foodResult,ScenarioManager.waterResult,ScenarioManager.honeyResult);
+		ScenarioManager.honeyResult=0;ScenarioManager.waterResult=0;ScenarioManager.foodResult=0;
+
+		float rand = Random.Range(0f,10f);
+		if(rand<3.33f){
+			//happens a turn late but at least it happens
+			ScenarioManager.ChooseEvent();
+			//should update UI values
+			//update the costs here -- DISPLAY EVENT???
+		}
+
+		ChangeResourceText.UpdateUIResources(Food,Water,Honey);
+		//TODO: play walking animation
+		SetHex(destinationTile);
 	}
 
 	//checks tile is not illegal in any way
 	public bool checkIllegalTiles(Hex hex){
 		if(hex.Elevation<=0f){
-			AlertSection.NewAlert("Illegal Tile!","default",hex.hexMap.hexToGameObjectMap[hex]);
 			return false;
 		}
 		return true;
 	}
-	public void checkTileInNeighbours(){
-
-	}
-	public void checkResourcesSufficient(){
-
-	}
-	public int MovementCostToEnterHex(Hex hex){
-		if(hex.Elevation<0.01f){
-			//0 is impossible, unable to enter
-			return 0;
-		}
-		//TODO: Overrise base movement cost
-		return hex.BaseMovementCost();
-	}
-
-	//a lot of this is for if we choose to allow pathfinding. At the moment
-	//we only care about single neighbour tile based movement
-
-	public float AggregateCostToEnterHex(Hex hex, float turnsToDate){
-		//all these complex floats are probably unnecessary for out uses:
-		//all we need to check is cost to enter based on our FOOD and WATER
-		//numbers. Considering max movement is 1 we won't allow pathfinding
-		//and so we can do single direct checks each time instead of this
-		//complex aggregation work. 
-
-		//TODO: Change logic to work off resources
-		/*
-			-get resource costs of travel
-			-if current resource<cost{
-				return false;
-			}else{
+	public bool checkTileInNeighbours(Hex hex, Map map){
+		//need to write a new checkNeighbours function
+		Hex[] hexes = map.getNeighbours(currentHex);
+		foreach(Hex a in hexes){
+			Debug.Log("a: " + map.hexToGameObjectMap[a]);
+			Debug.Log("Hex: " + map.hexToGameObjectMap[hex]);
+			//checks if positions match
+			if(a.Position()==hex.Position()){
 				return true;
 			}
-		 */
-		
-		//we should return the number of turns the total move is going
-		//to take
+		}
+		return false;
+	}
 
-		/*if(Water<hex.waterCost){
-			Debug.Log("Insufficient water for exploration!");
-			return false;
-		}else if(Food<hex.foodCost){
-			Debug.Log("Insufficient water for exploration!");
-			return false
-		}else{
+	public bool checkResourcesSufficient(Hex hex){
+		//TODO: write scripts to assign varying costs of food and water based on hex mesh and top mesh
+		if(hex.foodCost<=Food&&hex.waterCost<=Water){
 			return true;
-		}*/
-
-
-
-
-
-		float baseTurnsToEnterHex = MovementCostToEnterHex(hex)/movement;
-		float turnsRemainging = movementRemaining/movement; //always 1 for us
-
-		float turnsToDateWhole = Mathf.Floor(turnsToDate);
-		float turnsToDateFraction = turnsToDate - turnsToDateWhole;
-
-		if(turnsToDateFraction < 0.01f || turnsToDateFraction > 0.99f){
-			Debug.Log("We have some floating point drift");
-			//TODO: round?
-			if(turnsToDateFraction<0.01f){
-				turnsToDateFraction=0;
-			}else if(turnsToDateFraction>0.99f){
-				turnsToDateWhole+=1;
-				turnsToDateFraction=0;
-			}
 		}
-
-		float turnsUsedAfterThisMove = turnsToDateFraction + baseTurnsToEnterHex;
-
-		if(turnsUsedAfterThisMove>1){
-			//we have a situation where we dont actually have enough movement to continue
-			if(MOVEMENT_RULES_LIKE_CIV6){
-				//cant enter tile and have to sit idle for this turn
-				if(turnsToDateFraction==0){
-					//we have full movement but still cannot enter tile (because of resources)
-				}else{
-					turnsToDateWhole+=1;
-					turnsToDateFraction=1;
-				}
-
-				//So now we know for a fact we are starting to move into difficult
-				//terrain on a fresh turn
-				turnsUsedAfterThisMove = baseTurnsToEnterHex;
-				if(turnsUsedAfterThisMove>1){
-					turnsUsedAfterThisMove=1;
-				}
-			}else{
-				turnsUsedAfterThisMove=1;
-			}
-		}
-		return turnsToDateWhole + turnsUsedAfterThisMove;
+		return false;
 	}
 
-	//cost to enter a hex. This function should still be useful for us.
-	public float CostToEnterHex(Hex sourceTile, Hex destinationTile){
-		return 1;
+
+	public void UpdateResources(int food, int water, int honey=0){
+		if(Food+food<0){
+			Food=0;
+		}else{
+			Food+=food;
+		}
+
+		if(Water+water<0){
+			Water = 0;
+		}else{
+			Water +=water;
+		}
+
+		if(Honey+honey<0){
+			Honey=0;
+		}else{
+			Honey +=honey;
+		}
 	}
+
 }

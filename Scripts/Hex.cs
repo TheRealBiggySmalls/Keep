@@ -13,6 +13,10 @@ public class Hex {
 
 	//TODO: some kind of property to track hex type and maybe hex detail? (top and bottom meshes)
 	//Data for map generation and maybe in-game effects
+	//TODO: generate hex move cost function for each tile
+	//TODO: update resources and create events for tile.
+	//-----> TextMesh component which will display the values (FOR NOW)
+	//TODO: SHOW resource cost of each move to user before move
 	public float Elevation;
 	public float Moisture;
 	public int foodCost, waterCost;
@@ -29,6 +33,7 @@ public class Hex {
 		this.Q=q;
 		this.R=r;
 		this.S= -(q + r);
+		calculateFoodAndWaterCost();
 	}
 
 	//returns the world space position of this hex
@@ -139,7 +144,8 @@ public class Hex {
 	}
 
 	public void calculateFoodAndWaterCost(){
-
+		this.foodCost = Random.Range(1,13);
+		this.waterCost = Random.Range(3,9);
 	}
 
 }
