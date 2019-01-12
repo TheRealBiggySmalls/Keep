@@ -17,6 +17,7 @@ public class MouseController : MonoBehaviour {
 	delegate void UpdateFunc();
 
 	private Character characterSelected;
+	private Color previousColour;
 	UpdateFunc Update_CurrentFunction;
 	
 	//CLICK is reserved for moving to a tile/exploring the map/interacting with things
@@ -85,7 +86,6 @@ public class MouseController : MonoBehaviour {
 			
 			//initialise character
 			characterSelected.moveToHex(hitObject.GetComponentInChildren<HexComponent>().hex);
-			ChangeResourceText.UpdateUIResources(characterSelected.Food,characterSelected.Water,characterSelected.Honey);
 
 			//Create a new random event for that tile!
 			//Currently randomises so events only occur about one third of the time
