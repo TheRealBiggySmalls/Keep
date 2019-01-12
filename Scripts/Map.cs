@@ -13,6 +13,7 @@ public class Map : MonoBehaviour {
 	public GameObject Boy;
 	public Character player;
 
+
 	//can here have arrays of mesh filters for different biomes
 	//NEED BASE COLOR MESH FOR GROUND THEN TO DRAW MESH ON TOP USING COMPONENTS
 
@@ -51,16 +52,14 @@ public class Map : MonoBehaviour {
 		FocusCameraOnBoy();
 		highlightSelectableTiles(player.currentHex);
 		ChangeResourceText.UpdateUIResources(player.Food,player.Water, player.Honey);
+
 		//rerandomises the seed so debugging isnt no fun
 		Random.InitState(System.Environment.TickCount);
 	}
 
-	//HAVE A BUTTON THAT IS THE GAME MANAGER. ORGANISES ALL THINGS WHEN CLICKED
-	
-	void Update(){
-
+	public void doTurn(){
+		//Debug.Log("do turn");
 	}
-
 
 	public Hex GetHexAt(int x, int y){
 		if(hexes == null){

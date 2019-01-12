@@ -169,6 +169,8 @@ public class ScenarioManager : MonoBehaviour {
 		}
 	}
 
+	//make most of these about "you see a strange new hive in the woods/swamp/mountains etc" and the options give different ways to approach the bees
+	//each with different success rates and depending on the bee types they are more difficult to pass or require different tactics etc.
 	public void ScenarioThree(){
 
 	}
