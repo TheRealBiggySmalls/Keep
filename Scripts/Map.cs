@@ -48,6 +48,10 @@ public class Map : MonoBehaviour {
 		GenerateMap();
 		//after generate map can generate more ocean tiles around the whole world that are in
 		//a new array and are never interacted with
+		
+		//TODO: make place boy spawn on a random tile of specific elevation
+		//easy to do: just loop through all tiles after map has been spawned and choose one close
+		//to land
 		PlaceBoy(Boy, 12, 11);
 		FocusCameraOnBoy();
 		highlightSelectableTiles(player.currentHex);
@@ -130,7 +134,7 @@ public class Map : MonoBehaviour {
 
 				//basic food and water assignment
 
-				hexGo.GetComponentInChildren<TextMesh>().text = string.Format("{0},{1}", col, row);
+				hexGo.GetComponentInChildren<TextMesh>().text = "";//string.Format("{0},{1}", col, row);
 				
 				//lowPolyHex has a combined material. Could consider using this???
 				MeshRenderer mr = hexGo.GetComponentInChildren<MeshRenderer>();

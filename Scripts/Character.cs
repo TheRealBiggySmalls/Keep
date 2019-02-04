@@ -10,12 +10,10 @@ public class Character {
 	//Same as bees should be an array resouce, same as honey
 	//Maybe trade for coins which can be used to buy things off merchant OR specific items
 	//require specific rare honeycombs
-	public int Food=50, Water=50, Honey=0;
+	public int Food=500, Water=500, Honey=900;
 	public string Name = "Character";
 	public int movement = 1;
 	public int movementRemaining = 1;
-
-	public List<Bee> bees;
 
 
 	public delegate void CharacterMovedDelegate (Hex oldHex, Hex newHex);
@@ -29,11 +27,8 @@ public class Character {
 	public Hex currentHex{get; protected set;}
 	public Hex nextHex;
 	
-	public void initBees(){
-		bees = new List<Bee>();
-	}
 	//store the move for the character and then do the things in here
-	public void doTurn(){
+	public void doTurn(int turnNum){
 		UpdateDayResources();
 
 		if(nextHex==currentHex||nextHex==null){
@@ -50,7 +45,7 @@ public class Character {
 		ScenarioManager.honeyResult=0;ScenarioManager.waterResult=0;ScenarioManager.foodResult=0;
 
 		float rand = Random.Range(0f,10f);
-		if(rand<3.33f){
+		if(rand<4.5f&&(turnNum%7!=4)){
 			//happens a turn late but at least it happens
 			ScenarioManager.ChooseEvent();
 			//should update UI values
@@ -127,7 +122,6 @@ public class Character {
 	public void updateTileSelections(GameObject tile){
 		MeshRenderer mf = tile.GetComponentInChildren<MeshRenderer>();
 		currentSelectionColour = mf.material.color;
-		Debug.Log("Colour " + currentSelectionColour);
 		mf.material.color = Color.magenta;
 		oldTile=tile;
 	}
@@ -149,8 +143,6 @@ public class Character {
 		//need to write a new checkNeighbours function
 		Hex[] hexes = map.getNeighbours(currentHex);
 		foreach(Hex a in hexes){
-			Debug.Log("a: " + map.hexToGameObjectMap[a]);
-			Debug.Log("Hex: " + map.hexToGameObjectMap[hex]);
 			//checks if positions match
 			if(a.Position()==hex.Position()){
 				return true;
@@ -185,6 +177,7 @@ public class Character {
 		}else{
 			Honey +=honey;
 		}
+		ChangeResourceText.UpdateUIResources(Food,Water,Honey);//auto updates whenever there is a change
 	}
 
 }
