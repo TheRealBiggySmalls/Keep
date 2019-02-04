@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Reflection;
+using UnityEngine.EventSystems;
 
 public class ApiaryOrganiser : MonoBehaviour {
 
 	public GameObject apiaryWindow;
-	private RawImage beeSlotOne, beeSlotTwo, resultOne,resultTwo,resultThree;
-	private GameObject beeResultOne,beeResultTwo,beeResultThree;
+	private RawImage beeSlotOne, beeSlotTwo, resultOne,resultTwo,resultThree, honeyResultText;
+	private Button resultOneButton, resultTwoButton, resultThreeButton;
+	private GameObject beeResultOne,beeResultTwo,beeResultThree,toolTip;
 	public List<GameObject> bees;
 	private int breedTimer;
 	private Breeding breed;
@@ -18,20 +20,20 @@ public class ApiaryOrganiser : MonoBehaviour {
 
 	//this file works functionally but could use A LOT of optimisation
 	void Start(){
-		initApiary();
+		//initApiary();
 		initVars();
 		initBees();
 		hideBeesOnTiles();
 		HideApiaryWindow();
 	}
 
-	public void doTurn(){
+	public int doTurn(){
 
 		if(breedTimer==1){
 			string[] results = breed.beeResults;
 			int honeyResults = breed.honeyNumberResult;
 			if(results.Length<1){
-				return;
+				return 0;
 			}
 
 			//values in breed should be the same so i dont need to restore them
@@ -42,32 +44,40 @@ public class ApiaryOrganiser : MonoBehaviour {
 				if(bee.name==results[0]){
 					//maybe store gameobject here?
 					resultOne.enabled=true;
+					resultOneButton.enabled=true;
 					resultOne.texture=bee.GetComponentInChildren<RawImage>().texture;
 					beeResultOne=bee;
 				}
 				if(bee.name==results[1]){
 					resultTwo.enabled=true;
+					resultTwoButton.enabled=true;
 					resultTwo.texture=bee.GetComponentInChildren<RawImage>().texture;
 					beeResultTwo=bee;
 				}
 				if(bee.name==results[2]){
 					resultThree.enabled=true;
+					resultThreeButton.enabled = true;
 					resultThree.texture=bee.GetComponentInChildren<RawImage>().texture;
 					beeResultThree=bee;
 				}
 			}
-			//THESE TWO ADD TO THE QUANTITY
-			removeBeeSlot("one","temp");
-			removeBeeSlot("two","temp");
+			
+			removeBeeSlot("one",0);
+			removeBeeSlot("two",0);
+			beeSlotOne.GetComponentInChildren<Button>().enabled=true;
+			beeSlotTwo.GetComponentInChildren<Button>().enabled=true;
 
-			//TODO: fix bug where quantity is added to before they are clicked
-			//TODO: make honey not visible
+			//changes honey value and makes it active
+			enableHoney();
+			honeyResultText.GetComponentInChildren<Text>().text = honeyResults.ToString();
+
 			breedTimerText(-100); //hard reset
+
+			return honeyResults;
 		}else{
 			breedTimerText(-1);
-			//SET TEXT EQUAL TO BREED TIMER
-			//will probably be taking one turn longer than expected at the moment
 		}
+		return 0;
 	}
 
 	//helper function to update breed timer on button
@@ -77,16 +87,29 @@ public class ApiaryOrganiser : MonoBehaviour {
 			breedText.text = "Start";
 		}else{
 			breedTimer+=timer;
-			breedText.text = "Turns: " + breedTimer.ToString();
+			breedText.text = "Days: " + breedTimer.ToString();
 		}
 	}
 	public void ShowApiaryWindow(){
 		apiaryWindow.SetActive(true);
 	}
 
+
 	//this will always be called first
 	public void HideApiaryWindow(){
+		disableHoney();
+		toolTip.SetActive(false);
 		apiaryWindow.SetActive(false);
+	}
+
+	public void disableHoney(){
+		honeyResultText.GetComponentInChildren<Text>().enabled=false;
+		honeyResultText.enabled=false;
+	}
+
+	public void enableHoney(){
+		honeyResultText.enabled=true;
+		honeyResultText.GetComponentInChildren<Text>().enabled=true;
 	}
 
 	public void StartBreeding(){
@@ -107,34 +130,52 @@ public class ApiaryOrganiser : MonoBehaviour {
 			breedTimer = breed.startBreeding(beeOne,beeTwo);
 		}
 		breedTimerText(0);
-		//CHANGE TEXT HERE TOO
+		
+		//so bees cannot be removed from apiary mid breeding
+		beeSlotOne.GetComponentInChildren<Button>().enabled=false;
+		beeSlotTwo.GetComponentInChildren<Button>().enabled=false;
 	}
 
 	public void AddBeeToBackpack(string clicked){
 		//now remove graphic and unenable them again
-		//add to quantity of bee with same
+		//add to quantity of bee with same texture
 		if(clicked=="one"){
-			beeResultOne.GetComponentInChildren<Bee>().quantity+=1;
+			if(beeResultOne.GetComponentInChildren<Bee>().quantity<0){
+				beeResultOne.GetComponentInChildren<Bee>().quantity=1;
+			}else{
+				beeResultOne.GetComponentInChildren<Bee>().quantity+=1;
+			}
 			DisplayBee(beeResultOne, beeResultOne.GetComponentInChildren<Bee>());
 			resultOne.enabled=false;
+			resultOneButton.enabled=false;
+			//HERE TURN OFF BUTTON
+			//TODO: for infinibee bug - maybe enabled is not enough, might have to unset onclick listener
 		}else if(clicked=="two"){
-			beeResultTwo.GetComponentInChildren<Bee>().quantity+=1;
+			if(beeResultTwo.GetComponentInChildren<Bee>().quantity<0){
+				beeResultTwo.GetComponentInChildren<Bee>().quantity=1;
+			}else{
+				beeResultTwo.GetComponentInChildren<Bee>().quantity+=1;
+			}
 			DisplayBee(beeResultTwo, beeResultTwo.GetComponentInChildren<Bee>());
 			resultTwo.enabled=false;
+			resultTwoButton.enabled=false;
 		}else if(clicked=="three"){
-			beeResultThree.GetComponentInChildren<Bee>().quantity+=1;
+			if(beeResultThree.GetComponentInChildren<Bee>().quantity<0){
+				beeResultThree.GetComponentInChildren<Bee>().quantity=1;
+			}else{
+				beeResultThree.GetComponentInChildren<Bee>().quantity+=1;
+			}
 			DisplayBee(beeResultThree, beeResultThree.GetComponentInChildren<Bee>());
 			resultThree.enabled=false;
+			resultThreeButton.enabled=false;
 		}
-
-		//WORKS!!! Only thing is if new bees are added to the apiary their quantity is 0!
 	}
 
-	public void initApiary(){
-		Debug.Log("RUNNING");
+	/*public void initApiary(){
 		Image[] images = GameObject.Find("Canvas").GetComponentsInChildren<Image>();
+		Debug.Log(images[16].name);
 		apiaryWindow = images[16].gameObject;
-	}
+	}*/
 	
 	//this is ugly as but the logic all chacks out
 	public void initVars(){
@@ -148,15 +189,19 @@ public class ApiaryOrganiser : MonoBehaviour {
 		beeSlotOne = tiles[offset + 1];
 		beeSlotTwo = tiles[offset +3];
 		resultOne= tiles[offset +4];
+		resultOneButton = resultOne.GetComponentInChildren<Button>();
 		resultTwo=tiles[offset +5];
+		resultTwoButton = resultTwo.GetComponentInChildren<Button>();
 		resultThree=tiles[offset +6];
+		resultThreeButton = resultThree.GetComponentInChildren<Button>();
+		honeyResultText = tiles[tiles.Length-1];
+		Image[] gm = apiaryWindow.GetComponentsInChildren<Image>();
+		toolTip = gm[gm.Length-1].gameObject;
 	}
 	public void initBees(){
 		foreach(GameObject bee in bees) { 
-			//CAN SET ON CLICK METHOD HERE
 			bee.GetComponentInChildren<Button>().onClick.AddListener(delegate{addBeeToApaiary(bee);});
-			//TODO: programatically set up textures
-
+			
 			Bee component = bee.GetComponentInChildren<Bee>();
 			component.beeObject=bee;
 
@@ -168,8 +213,11 @@ public class ApiaryOrganiser : MonoBehaviour {
 			}else{
 				component.quantity=-1; //default value for bees that have not been found yet
 			}
+			component.initText();
 			component.type=name;
 			bee.name = name;
+
+			component.setToolTip(toolTip); //all bees share the same object. 
 
 			if(component.updateVisuals()){
 				DisplayBee(bee, component);
@@ -233,15 +281,15 @@ public class ApiaryOrganiser : MonoBehaviour {
 		}
 	}
 
-	public void removeBeeSlot(string slot,string noAdd){
+	public void removeBeeSlot(string slot,int amount){
 		if(slot=="one"){
 			BeeSlotScript script = beeSlotOne.GetComponentInChildren<BeeSlotScript>();
 			script.removeBee(beeSlotOne);
-			addToBeeQuantity(script.oldTexture, 0);
+			addToBeeQuantity(script.oldTexture, amount);
 		}else if(slot=="two"){
 			BeeSlotScript script = beeSlotTwo.GetComponentInChildren<BeeSlotScript>();
 			script.removeBee(beeSlotTwo);
-			addToBeeQuantity(script.oldTexture, 0);
+			addToBeeQuantity(script.oldTexture, amount);
 		}
 	}
 

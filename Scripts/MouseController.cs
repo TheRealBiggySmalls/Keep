@@ -25,6 +25,7 @@ public class MouseController : MonoBehaviour {
 	// Update is called once per frame
 
 	void Update(){
+		//TODO: make it so camera cannot be dragged if a UI component is open
 
 		if(Input.GetKeyDown(KeyCode.Escape)){
 			CancelUpdateFunction();
@@ -115,10 +116,11 @@ public class MouseController : MonoBehaviour {
 	}
 
 	void Update_ScrollZoom(){
+		return; //DONE FOR NOW AS ZOOMING ISNT PARTICULARLY REQUIRED
 		//FOR ZOOMING (Zoom to scrollwheel)
 		float scrollAmount = Input.GetAxis("Mouse ScrollWheel");
 		float minHeight = 2;
-		float maxHeight = 10;
+		float maxHeight = 7;
 		Vector3 hitPos = CheckHitPos(Input.mousePosition);
 		
 		if(Mathf.Abs(scrollAmount)>0.01f){
@@ -142,8 +144,8 @@ public class MouseController : MonoBehaviour {
 			Camera.main.transform.position = p;
 
 			//Change camera angle when you get to the extremes
-			float lowZoom = minHeight+2;
-			float highZoom = maxHeight-5;
+			float lowZoom = minHeight+3;
+			float highZoom = maxHeight-3;
 
 			//TODO: Fix bug where xooming in and pulling land makes you go through it
 			//TODO: fix initial angle and y of camera so it doesn't look so weird
@@ -158,7 +160,6 @@ public class MouseController : MonoBehaviour {
 	Vector3 CheckHitPos(Vector3 mousePos){
 		Ray mouseRay = Camera.main.ScreenPointToRay(mousePos);
 		if(mouseRay.direction.y>=0){
-			//Debug.LogError("why is mouse pointing up?");
 			return Vector3.zero;
 		}
 		
