@@ -102,6 +102,7 @@ public class MouseController : MonoBehaviour {
 
 	void Update_CameraDrag () {
 
+		//TODO: lock drag within a certain portion of the gameworld so it's borders are never revealed
 		if(Input.GetMouseButtonUp(0)){
 			CancelUpdateFunction();
 			return;
@@ -116,7 +117,7 @@ public class MouseController : MonoBehaviour {
 	}
 
 	void Update_ScrollZoom(){
-		return; //DONE FOR NOW AS ZOOMING ISNT PARTICULARLY REQUIRED
+		//return; //DONE FOR NOW AS ZOOMING ISNT PARTICULARLY REQUIRED
 		//FOR ZOOMING (Zoom to scrollwheel)
 		float scrollAmount = Input.GetAxis("Mouse ScrollWheel");
 		float minHeight = 2;

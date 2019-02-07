@@ -9,6 +9,7 @@ public class Breeding : MonoBehaviour {
 	private List<Recipe> recipes;
 	private Bee bees;
 	private Dictionary<string, Recipe> beeRecipes;
+	private UniquesBackpack backpack;
 
 	public string[] beeResults;
 	public int honeyNumberResult;
@@ -18,6 +19,8 @@ public class Breeding : MonoBehaviour {
 		beeRecipes = new Dictionary<string, Recipe>();
 		//add all recipes
 		addAllRecipesGross();
+
+		backpack = GameObject.Find("Canvas").GetComponentInChildren<UniquesBackpack>();
 	}
 
 
@@ -47,6 +50,11 @@ public class Breeding : MonoBehaviour {
 
 		results.Add(recipe.beeOne); //first bee is always the first one that went in
 
+		//if the player has honeycomb it doubles mutation chance
+		if(backpack.itemTruth["honeycomb"]){
+			recipe.chance = recipe.chance*2;
+		}
+
 		//second bee depends on the chance
 		if(Random.Range(0,100)<=recipe.chance){
 			results.Add(recipe.beeResultOne);
@@ -75,14 +83,10 @@ public class Breeding : MonoBehaviour {
 		Recipe recipe;
 		
 		//BASE HONEY RESULT IS 15
-		//TODO: fill out lower level bee recipes (only toxic left)
 		//TODO: fill out higher level bee recipes (go through one breed at a time)
 		//---->>>> suss out names for the breeds so they can be treated properly on the back end
 		//add recipes breeding into exotic and mutant bees
 
-		//UP TO TOXIC 
-		//MAKE SO SHINY/HIGHER LEVEL BEES WONT BREED WITH LOWER LEVEL BEES: DILIGENT, INTELLIGENT, STRANGE (exotic), TOXIC (mutant) only breed with each other and those above
-		//--->>>each of these bees has a distinct name/unique personality
 
 		//<---BLAND---> 
 		recipe = new Recipe("bland", "common", 50, "common", "plains", 14,2); //one in four chance for the unnatural tree
@@ -606,5 +610,172 @@ public class Breeding : MonoBehaviour {
 		recipe = new Recipe("magic", "ocean", 80, "forest", "ocean", 46,5);
 		beeRecipes.Add("magic_ocean", recipe);
 
+
+		//<<<<<<<<--------------------------- HIGH LEVEL BEES --------------------------->>>>>>>>//
+		//intelligent, diligent, exotic (Strange), mutant //base level of honey is 50
+		//diligentWarrior (Killer Bee), diligentWorker (Black Hole)
+		//intelligentCommon (Genius) , intelligentNice (horny bee - create new texture)
+		//exoticShore, exoticWorker (The Infinibee)
+		//mutantMagic, mutantToxic
+		//BREEDING: infinibee with black hole will end the game -> give dimensional rip
+
+		//4 devestating events can occur if bees are bred without protection: other bees start dying - shop keeper is killed - food and water become 0
+		//SHIT GETS WHACK: VERY HIGH MUTATION CHANCE (keep in mind players probably have honeycomb)
+
+		//horny bee starts fucking the other bees in the hive to death
+
+
+		//<<---INTELLIGENT--->
+		recipe = new Recipe("intelligent", "intelligent", 100, "intelligent", "intelligent", 55,3);
+		beeRecipes.Add("intelligent_intelligent", recipe);
+
+		recipe = new Recipe("intelligent", "diligent", 35, "intelligentCommon", "diligentWarrior", 65,3); //genius, killer
+		beeRecipes.Add("intelligent_diligent", recipe);
+
+		recipe = new Recipe("intelligent", "exotic", 35, "diligentWarrior", "exoticShore", 78,3); //killer, void
+		beeRecipes.Add("intelligent_exotic", recipe);
+
+		recipe = new Recipe("intelligent", "mutant", 35, "intelligentCommon", "mutantToxic", 40,4); //genius, stank
+		beeRecipes.Add("intelligent_mutant", recipe);
+
+		//<<---DILIGENT--->
+		recipe = new Recipe("diligent", "diligent", 100, "diligent", "diligent", 60,3);
+		beeRecipes.Add("diligent_diligent", recipe);
+
+		recipe = new Recipe("diligent", "intelligent", 35, "intelligentCommon", "intelligentCommon", 68,3); //genius, genius
+		beeRecipes.Add("diligent_intelligent", recipe);
+
+		recipe = new Recipe("diligent", "exotic", 35, "exoticShore", "diligentWarrior", 80,3); //void, killer
+		beeRecipes.Add("diligent_exotic", recipe);
+
+		recipe = new Recipe("diligent", "mutant", 35, "diligentWarrior", "mutantToxic", 42,4); //killer, stank
+		beeRecipes.Add("diligent_mutant", recipe);
+
+		//<<---EXOTIC--->
+		recipe = new Recipe("exotic", "exotic", 100, "exotic", "exotic", 50,3);
+		beeRecipes.Add("exotic_exotic", recipe);
+
+		recipe = new Recipe("exotic", "intelligent", 35, "exoticShore", "intelligentCommon", 77,3); //void, genius
+		beeRecipes.Add("exotic_intelligent", recipe);
+
+		recipe = new Recipe("exotic", "diligent", 35, "exoticShore", "diligentWarrior", 78,3); //void, warrior
+		beeRecipes.Add("exotic_diligent", recipe);
+
+		recipe = new Recipe("exotic", "mutant", 35, "mutantToxic", "exoticShore", 69,4); //stank, void
+		beeRecipes.Add("exotic_mutant", recipe);
+
+		//<<---MUTANT--->
+		recipe = new Recipe("mutant", "mutant", 100, "mutant", "mutant", 50,3);
+		beeRecipes.Add("mutant_mutant", recipe);
+
+		recipe = new Recipe("mutant", "intelligent", 35, "intelligentCommon", "diligentWarrior", 41,3); //genius, killer
+		beeRecipes.Add("mutant_intelligent", recipe);
+
+		recipe = new Recipe("mutant", "diligent", 35, "diligentWarrior", "intelligentCommon", 42,3); //warrior, genius
+		beeRecipes.Add("mutant_diligent", recipe);
+
+		recipe = new Recipe("mutant", "exotic", 35, "mutantToxic", "exoticShore", 68,3); //stank, void
+		beeRecipes.Add("mutant_exotic", recipe);
+
+		//<<---INTELLIGENT COMMON---> (Genius)
+		recipe = new Recipe("intelligentCommon", "intelligentCommon", 100, "intelligentCommon", "intelligentCommon", 75,3);
+		beeRecipes.Add("intelligentCommon_intelligentCommon", recipe);
+
+		recipe = new Recipe("intelligentCommon", "mutantToxic", 200, "intelligentNice", "intelligentNice", 48,4);
+		beeRecipes.Add("intelligentCommon_mutantToxic", recipe);
+
+		recipe = new Recipe("intelligentCommon", "diligentWarrior", 200, "intelligentNice", "intelligentNice", 64,4);
+		beeRecipes.Add("intelligentCommon_diligentWarrior", recipe);
+
+		recipe = new Recipe("intelligentCommon", "exoticShore", 20, "intelligentNice", "mutantMagic", 75,4);
+		beeRecipes.Add("intelligentCommon_exoticShore", recipe);
+
+		recipe = new Recipe("intelligentCommon", "exotic", 35, "exotic", "exoticShore", 74,4);
+		beeRecipes.Add("intelligentCommon_exotic", recipe);
+
+		recipe = new Recipe("intelligentCommon", "mutant", 35, "mutant", "mutantToxic", 42,4);
+		beeRecipes.Add("intelligentCommon_mutant", recipe);
+
+		recipe = new Recipe("intelligentCommon", "diligent", 35, "diligent", "diligentWarrior", 69,4);
+		beeRecipes.Add("intelligentCommon_diligent", recipe);
+
+		recipe = new Recipe("intelligentCommon", "intelligent", 200, "intelligentNice", "intelligentNice", 72,4);
+		beeRecipes.Add("intelligentCommon_intelligent", recipe);
+
+		//<<---DILIGENT WARRIOR---> (Killer)
+		recipe = new Recipe("diligentWarrior", "diligentWarrior", 100, "diligentWarrior", "diligentWarrior", 55,3);
+		beeRecipes.Add("diligentWarrior_diligentWarrior", recipe);
+
+		recipe = new Recipe("diligentWarrior", "intelligentCommon", 200, "intelligentNice", "intelligentNice", 64,3);
+		beeRecipes.Add("diligentWarrior_intelligentCommon", recipe);
+
+		recipe = new Recipe("diligentWarrior", "mutantToxic", 200, "intelligentNice", "intelligentNice", 44,4);
+		beeRecipes.Add("diligentWarrior_mutantToxic", recipe);
+
+		recipe = new Recipe("diligentWarrior", "exoticShore", 20, "intelligentNice", "mutantMagic", 75,4);
+		beeRecipes.Add("diligentWarrior_exoticShore", recipe);
+
+		recipe = new Recipe("diligentWarrior", "exotic", 35, "exotic", "exoticShore", 73,4);
+		beeRecipes.Add("diligentWarrior_exotic", recipe);
+
+		recipe = new Recipe("diligentWarrior", "mutant", 35, "mutant", "mutantToxic", 40,4);
+		beeRecipes.Add("diligentWarrior_mutant", recipe);
+
+		recipe = new Recipe("diligentWarrior", "diligent", 12, "diligent", "diligent", 64,4);
+		beeRecipes.Add("diligentWarrior_diligent", recipe);
+
+		recipe = new Recipe("diligentWarrior", "intelligent", 35, "intelligent", "intelligentCommon", 68,4);
+		beeRecipes.Add("diligentWarrior_intelligent", recipe);
+
+		//<<---EXOTIC SHORE---> (Void)
+		recipe = new Recipe("exoticShore", "exoticShore", 20, "exoticShore", "exoticShore", 80,3);
+		beeRecipes.Add("exoticShore_exoticShore", recipe);
+
+		recipe = new Recipe("exoticShore", "intelligentCommon", 20, "mutantMagic", "intelligentNice", 80,4); //eldritch, horny
+		beeRecipes.Add("exoticShore_intelligentCommon", recipe);
+
+		recipe = new Recipe("exoticShore", "mutantToxic", 20, "mutantMagic", "intelligentNice", 80,4); //eldritch, horny
+		beeRecipes.Add("exoticShore_mutantToxic", recipe);
+
+		recipe = new Recipe("exoticShore", "diligentWarrior", 20, "intelligentNice", "mutantMagic", 80,4);//horny, eldritch
+		beeRecipes.Add("exoticShore_diligentWarrior", recipe);
+
+		recipe = new Recipe("exoticShore", "mutant", 35, "mutant", "mutantToxic", 64,4); //breeding backwards gives tier 0 and tier 1 of that bee
+		beeRecipes.Add("exoticShore_mutant", recipe);
+
+		recipe = new Recipe("exoticShore", "exotic", 12, "exotic", "mutantMagic", 85,3);
+		beeRecipes.Add("exoticShore_exotic", recipe);
+
+		recipe = new Recipe("exoticShore", "intelligent", 35, "intelligent", "intelligentCommon", 79,4);
+		beeRecipes.Add("exoticShore_intelligent", recipe);
+
+		recipe = new Recipe("exoticShore", "diligent", 35, "diligent", "diligentWarrior", 78,4);
+		beeRecipes.Add("exoticShore_diligent", recipe);
+
+		//<<---DILIGENT WARRIOR---> (Stank)
+		recipe = new Recipe("mutantToxic", "mutantToxic", 100, "mutantToxic", "mutantToxic", 20,3);
+		beeRecipes.Add("mutantToxic_mutantToxic", recipe);
+
+		recipe = new Recipe("mutantToxic", "intelligentCommon", 200, "intelligentNice", "intelligentNice", 43,4);
+		beeRecipes.Add("mutantToxic_intelligentCommon", recipe);
+
+		recipe = new Recipe("mutantToxic", "diligentWarrior", 200, "intelligentNice", "intelligentNice", 44,4);
+		beeRecipes.Add("mutantToxic_diligentWarrior", recipe);
+
+		recipe = new Recipe("mutantToxic", "exoticShore", 20, "intelligentNice", "mutantMagic", 55,4);
+		beeRecipes.Add("mutantToxic_exoticShore", recipe);
+
+		recipe = new Recipe("mutantToxic", "exotic", 35, "exotic", "exoticShore", 50,4);
+		beeRecipes.Add("mutantToxic_exotic", recipe);
+
+		recipe = new Recipe("mutantToxic", "mutant", 12, "mutant", "mutant", 40,4);
+		beeRecipes.Add("mutantToxic_mutant", recipe);
+
+		recipe = new Recipe("mutantToxic", "diligent", 35, "diligent", "diligentWarrior", 42,4);
+		beeRecipes.Add("mutantToxic_diligent", recipe);
+
+		recipe = new Recipe("mutantToxic", "intelligent", 35, "intelligent", "intelligentCommon", 41,4);
+		beeRecipes.Add("mutantToxic_intelligent", recipe);
+		
 	}	
 }
