@@ -16,6 +16,7 @@ public class ScenarioManager : MonoBehaviour {
 	public GameObject apiary; private UniquesBackpack backpack;
 
 	private static ScenarioManager instance;
+	private List<int> eventsThatHaveOccured;
 	public int ScenarioId;
 
 	//store a delegate function that stores the current outcome
@@ -31,19 +32,21 @@ public class ScenarioManager : MonoBehaviour {
 		OptionTwo = "SECOND OPTION";
 		ScenarioId = 999;
 		backpack = GameObject.Find("Canvas").GetComponentInChildren<UniquesBackpack>();
+		eventsThatHaveOccured = new List<int>();
 	}
 
-	public static void ChooseEvent(int id = 0){
+	public static void ChooseEvent(Hex hex, int id = 0){
 		int rand;
 		if(id==0){
 			//Pick a random event!
 			//change this to 30 later. Just using now so it doesnt break
-			rand = (int) Random.Range(1,19.99f);
+			rand = (int) Random.Range(1,10);
+			Debug.Log(rand);
 		}else{
 			rand = id;
 		}
 
-		instance.yuckyIf(rand);
+		instance.yuckyIf(rand, hex);
 		instance.CreateEvent();
 	}
 
@@ -158,7 +161,37 @@ public class ScenarioManager : MonoBehaviour {
 	}
 
 
-
+	private float mountain=0.8f, snow=0.61f,forest=0.2f,grassland=0.16f;
+	public bool identifyTile(Hex hex, string tile){
+		float ele = hex.Elevation;
+		if(ele>=mountain){
+			if(tile=="mountain"){
+				return true;
+			}
+			return false;
+		}else if(ele>=snow&&ele<mountain){
+			if(tile=="snow"){
+				return true;
+			}
+			return false;
+		}else if(ele>=forest&&ele<snow){
+			if(tile=="forest"){
+				return true;
+			}
+			return false;
+		}else if(ele>=grassland&&ele<forest){
+			if(tile=="grasslands"){
+				return true;
+			}
+			return false;
+		}else if(ele<grassland&&ele>0){
+			if(tile=="desert"){
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
 
 
 	//Here create a bunch of scenarios. Or maybe store them in a different file called Events
@@ -177,7 +210,7 @@ public class ScenarioManager : MonoBehaviour {
 	}
 	public Texture ScenarioOneOutcome(int outcome){
 		if(outcome==1){
-			honeyResult = Random.Range(3,13);
+			honeyResult = Random.Range(10,20);
 			//HERE: add in some randomness
 			EventText = "You stumble across a wild hive filled with bland bees and are able to harvest some of their honey!";
 			CloseText = "Huzzah!";
@@ -202,8 +235,8 @@ public class ScenarioManager : MonoBehaviour {
 	}
 	public Texture ScenarioTwoOutcome(int outcome){
 		if(outcome==1){
-			waterResult = Random.Range(7,14);
-			foodResult = Random.Range(2,6);
+			waterResult = Random.Range(8,20);
+			foodResult = Random.Range(10,25);
 			EventText = "You enter the cottage and find a small number of well-preserved supplies!";
 			CloseText = "Hooray!";
 			/*
@@ -403,6 +436,34 @@ public class ScenarioManager : MonoBehaviour {
 		return texture;
 	}
 
+	public void ScenarioSeventy(){ //BOAT IS FOR OCEAN BEES
+		ScenarioId=70;
+		HeaderText = "Bees!";
+		EventText = "While rowing around you have spotted some shapes oscillating around the water";
+		OptionOne = "Row over";
+		OptionTwo = "Ignore Them";
+	}
+	public Texture ScenarioSeventyOutcome(int outcome){
+		Texture texture=defaultTexture;
+		if(outcome==1){
+			EventText = "Your rickety old boat calmly moors the waves as you row over. Looking around you barely can make out a bustling hive - filled with dark blue bees, hard to see amongst the depth of the ocean. You calmly collect a few and they dont seem to object as you take them back to shore with you.";
+			CloseText = "Yeehaw!";
+			beeQuantity = Random.Range(1,5);
+			foreach(GameObject text in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				//saves me having to store it twice?
+				if(text.GetComponentInChildren<RawImage>().texture.name=="ocean"){
+					texture=text.GetComponentInChildren<RawImage>().texture;	
+					break;
+				}
+			}
+			//dont set texture here it will still be null
+		}else if(outcome==2){
+			EventText = "The Ocean can do strange things to a man... You decide to move on.";
+			CloseText = "The Ocean Stirs...";
+		}
+		return texture;
+	}
+
 	public void ScenarioEight(){ //SHOES IS FOR OCEAN BEES
 		ScenarioId=8;
 		HeaderText = "Bees!";
@@ -415,6 +476,42 @@ public class ScenarioManager : MonoBehaviour {
 		}
 	}
 	public Texture ScenarioEightOutcome(int outcome){
+		Texture texture=defaultTexture;
+		if(outcome==2&&backpack.itemTruth["shoe"]){
+			EventText = "Your special shoes cancel out all sounds from the squeaky sand and you are able to reach the bees without startling them. they happily come with you when gathered.";
+			CloseText = "Yeet!";
+			beeQuantity = Random.Range(1,5);
+			foreach(GameObject text in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				//saves me having to store it twice?
+				if(text.GetComponentInChildren<RawImage>().texture.name=="shore"){
+					texture=text.GetComponentInChildren<RawImage>().texture;	
+					break;
+				}
+			}
+			//dont set texture here it will still be null
+		}else if(outcome==2){
+			EventText = "You start to approach them before realising this is no regular sand... its SQUEAKY sand! The bees are startled by the sound and disperse.";
+			CloseText = "Hmm...";
+		//not today
+		}else if(outcome==1){
+			EventText = "On hearing you they disperse, and even after waiting for some time they show no signs of returning.";
+			CloseText = "Hmm...";
+		}
+		return texture;
+	}
+
+	public void ScenarioEighty(){ //SHOES IS FOR OCEAN BEES
+		ScenarioId=80;
+		HeaderText = "Bees!";
+		EventText = "From a nearby beach you can see unusual bees busy at work. You dock on the beach as the waves silently roll you in.";
+		OptionOne = "Call out the them";
+		if(backpack.itemTruth["shoe"]){
+			OptionTwo = "Adorn your sneak proof shoes";
+		}else{
+			OptionTwo = "Walk up to them";
+		}
+	}
+	public Texture ScenarioEightyOutcome(int outcome){
 		Texture texture=defaultTexture;
 		if(outcome==2&&backpack.itemTruth["shoe"]){
 			EventText = "Your special shoes cancel out all sounds from the squeaky sand and you are able to reach the bees without startling them. they happily come with you when gathered.";
@@ -655,25 +752,421 @@ public class ScenarioManager : MonoBehaviour {
 		return null;
 	}
 
-	public void yuckyIf(int rand){
-		if(rand==1){
+	//<<<----- END OF BOOK/TUTORIAL EVENTS ----->>>
+
+	//<<<-------Scenarios 20-30 are for events unique to having items--------->>>
+	public void ScenarioTwenty(){ //PICKAXE IS FOR STONE BEES
+		ScenarioId=6;
+		HeaderText = "A Small Opening";
+		EventText = "You have been following a mountainside for some time and to your right is a large cliff face. You turn a corner and are confronted by an old mine entrance covered in rubble...";
+		OptionTwo = "Try to remove the rocks";
+		if(backpack.itemTruth["pickaxe"]){
+			OptionOne = "Plow through with your pick";
+		}else{
+			OptionOne = "Carry on";
+		}
+	}
+	public Texture ScenarioTwentyOutcome(int outcome){
+		Texture texture=defaultTexture;
+		if(outcome==1&&backpack.itemTruth["pickaxe"]){
+			EventText = "You chip at the rocks and have quickly cleared the rubble with ease. Inside the now open cave you find a small running spring amongst a few skeletons of miners who undoubtedly were trapped and perished in here. Near one of the skeletons you find a satchel of honey! A staple snack for hardworking miners. I'm sure he woudln't mind you taking it.";
+			CloseText = "Did that skeleton move?";
+			waterResult = Random.Range(30,55); //lots of water is stored in the cave! Underground creek
+			honeyResult = Random.Range(22,40);
+		}else if(outcome==1){
+			EventText = "I don't have time to play around with rocks.";
+			CloseText = "The sun is still high.";
+		}else if(outcome==2){
+			EventText = "You struggle with the rocks for some time but your attempts are fruitless. They won't budge!";
+			CloseText = "I'll be back, rocks.";
+		}
+		return texture;
+	}
+
+	//<<<<<<<<<<<------events past 30 are region specific------------->>>>>>>>>>>>>
+
+	//MOUNTAINS:
+	public void ScenarioThirtyOne(){ 
+		ScenarioId=31;
+		HeaderText = "Precarious Heights!";
+		EventText = "Walking through the mountains you find a detour from the path, taking you to a steep crevas, crossed only by a small wooden bridge...";
+		OptionTwo = "Probably not safe...";
+		if(backpack.itemTruth["shoes"]){
+			OptionOne = "You feel confident in the jump";
+		}else{
+			OptionOne = "Take the bridge";
+		}
+	}
+	public Texture ScenarioThirtyOneOutcome(int outcome){
+		if(outcome==1&&backpack.itemTruth["shoes"]){
+			EventText = "Thanks to your Yeezys you clear the gap with ease and explore the area. An old miners colony was here and there are many supplies left behind!";
+			CloseText = "Now to get back!";
+			waterResult = Random.Range(30,55); //lots of water is stored in the cave! Underground creek
+			foodResult = Random.Range(50,75);
+			honeyResult = Random.Range(20,35);
+		}else if(outcome==1){
+			EventText = "One step onto the bridge and it immediatly gives way... You wake up next to a river a few hours later and in the distance can make out the area you fell from. This stream miust have broken your fall! Though you do notice some of your supplies have washed away...";
+			CloseText = "Lucky!";
+			waterResult = Random.Range(-25,-20); //lots of water is stored in the cave! Underground creek
+			foodResult = Random.Range(-25,-20);
+			honeyResult = Random.Range(-10,-1);
+		}else if(outcome==2){
+			EventText = "You think you made the right call.";
+			CloseText = "Bye!";
+		}
+		return null;
+	}
+
+	public void ScenarioThirtyTwo(){ 
+		ScenarioId=32;
+		HeaderText = "Towering Peaks";
+		EventText = "You come to a pass and see two towering peaks in the distance. Where are you headed?";
+		OptionTwo = "Left!";
+		OptionOne = "Right!";
+	}
+	public Texture ScenarioThirtyTwoOutcome(int outcome){
+		if(outcome==1){
+			EventText = "Onwards to victory! The left peak is being conquered today!";
+			CloseText = "Here I come!";
+		}else if(outcome==2){
+			EventText = "Onwards to victory! The right peak is being conquered today!";
+			CloseText = "Here I come!";
+		}
+		return null;
+	}
+
+	public void ScenarioThirtyThree(){ 
+		ScenarioId=33;
+		HeaderText = "The Summit";
+		EventText = "You raise your weary head and realise you have hit the top of a mountain! Looking around fills you with awe.";
+		OptionTwo = "Enjoy the view";
+		OptionOne = "Onwards!";
+	}
+	public Texture ScenarioThirtyThreeOutcome(int outcome){
+		if(outcome==1){
+			EventText = "The beauty of the world will have to wait another day.";
+			CloseText = "Don't forget to smell the flowers!";
+		}else if(outcome==2){
+			EventText = "Taking in the sights inspires you. You feel like you have a lesson you can take back to your hive. [within species purity is better preserved for 10 turns]";
+			CloseText = "Breathtaking!";
+		}
+		return null;
+	}
+
+
+	//SNOW
+	public void ScenarioFourtyOne(){ //snow cave, unstable ground, play in the snow
+		ScenarioId=41;
+		HeaderText = "Blizzard!";
+		EventText = "The weather is taking a turn for the worse! Soon this will be unbearable.";
+		OptionOne = "Nothing will stop me.";
+		OptionTwo = "Find some shelter!";
+	}
+	public Texture ScenarioFourtyOneOutcome(int outcome){
+		if(outcome==1){
+			EventText = "You trudge through the snow making less and less progress until you can barely take a step. While progress is slow, you feel your resolve has been hardened.";
+			CloseText = "Take that nature!";
+			waterResult = Random.Range(-10,-5); //lots of water is stored in the cave! Underground creek
+			foodResult = Random.Range(-10,-5);
+		}else if(outcome==2){
+			EventText = "Around a corner is a small cave that shelters you from the harsh winds and snow. You decide to enjoy a snack while the storm passes over.";
+			CloseText = "Yum!";
+			foodResult = Random.Range(-4,-2);
+		}
+		return null;
+	}
+
+	public void ScenarioFourtyTwo(){ //snow cave, unstable ground, play in the snow
+		ScenarioId=42;
+		HeaderText = "Unstable Footing";
+		EventText = "Ahead of you is a large frozen lake. You want to cross it but you are not sure how deep the ice is...";
+		OptionTwo = "She'll be right";
+		OptionOne = "I'll go around";
+	}
+
+	public Texture ScenarioFourtyTwoOutcome(int outcome){
+		int rand = Random.Range(0,10);
+		if(outcome==1){
+			EventText = "The water looks mighty cold! Not risking it makes sense to you.";
+			CloseText = "This could be worse";
+		}else if(outcome==2&&rand>0.5){
+			EventText = "The ice seems stable for a few steps until... it cracks! You fall in and get mighty chilly. You manage to crawl out fine but a large stash of your honey has frozen together, making it useless...";
+			CloseText = "Blast!";
+			foodResult = Random.Range(-40,-25);
+		}else{
+			EventText = "The ice seems stable for a few steps until... nothing! You manage to cross it safely and have a great time slipping around while you do it! [you feel inspired, bees are more likely to cross breed for 5 turns]";
+			CloseText = "Wheee!";
+		}
+		return null;
+	}
+
+	public void ScenarioFourtyThree(){ 
+		ScenarioId=43;
+		HeaderText = "What are you doing here?";
+		EventText = "Walking across a field you see a small group of bright blue bees wandering around. They look disoriented and lost...";
+		OptionOne = "Walk over";
+		OptionTwo = "Talk to them";
+	}
+
+	public Texture ScenarioFourtyThreeOutcome(int outcome){
+		Texture texture=defaultTexture;
+		if(outcome==1&&backpack.itemTruth["robe"]){
+			EventText = "You manage to walk over without disturbing the bees. They seem confused and upon seeing you, decide you probably know where you are going. They settle into your backpack.";
+			CloseText = "Hello friends";
+			beeQuantity = Random.Range(3,6);
+			foreach(GameObject text in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				//saves me having to store it twice?
+				if(text.GetComponentInChildren<RawImage>().texture.name=="shore"){
+					texture=text.GetComponentInChildren<RawImage>().texture;	
+					break;
+				}
+			}
+		}else if(outcome==1){
+			EventText = "You walk over and the bees but as you get closer their humming starts to effect you and you break down in tears. When you regain your sense they are gone.";
+			CloseText = "I hope they are okay";
+		}else{
+			EventText = "Your noise startles the bees and they leave with haste...";
+			CloseText = "I hope they are okay";
+		}
+		return texture;
+	}
+
+	//FOREST
+	public void ScenarioFiftyOne(){ //the allfather tree
+		ScenarioId=51;
+		HeaderText = "The Allfather";
+		EventText = "You round a corner and are confronted by the most majestic tree you have ever seen; it's branches stretching to the skies and it's roots undoubtely deeper than the mountain. 'SPEAK. WHAT DOES YOUR HEART DESIRE?', it bellows at you in an ethereal voice";
+		OptionOne = "Wealth";
+		OptionTwo = "Happiness";
+	}
+	public Texture ScenarioFiftyOneOutcome(int outcome){
+		Texture texture=defaultTexture;
+		if(outcome==1){
+			string[] beeOutcomes = {"shore","forest","ocean","warrior","icy","stone","toxic"};
+			string bee = beeOutcomes[Random.Range(1,beeOutcomes.Length)];
+			beeQuantity = Random.Range(3,6);
+			foreach(GameObject text in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				if(text.GetComponentInChildren<RawImage>().texture.name==bee){
+					texture=text.GetComponentInChildren<RawImage>().texture;	
+					break;
+				}
+			}
+			EventText = "'IT IS YOURS'";
+			CloseText = "Wow!";
+		}else{
+			EventText = "'THEN YOU ARE SEARCHING IN THE WRONG PLACE...'";
+			CloseText = "Have I learnt something?";
+		}
+		return texture;
+	}
+
+	public void ScenarioFiftyTwo(){ 
+		ScenarioId=52;
+		HeaderText = "Mother Nature";
+		EventText = "As you are walking you feel the ground beneath your feet start talking to you... if you can call it that. It vibrates in tones you seem to understand at a baser level. It wants you to pick a fortune...";
+		OptionOne = "Good health";
+		OptionTwo = "Good luck";
+	}
+	public Texture ScenarioFiftyTwoOutcome(int outcome){
+		if(outcome==1){
+			EventText = "You are overcome with a sense of zealous energy. You haven't felt this good since you were young.";
+			CloseText = "I am going to run.";
+		}else{
+			EventText = "It suggests perhaps you already have this.";
+			CloseText = "Have I learnt something?";
+		}
+		return null;
+	}
+
+	public void ScenarioFiftyThree(){ 
+		ScenarioId=53;
+		HeaderText = "???";
+		EventText = "The world in front of you bends and distorts for a brief second, revealing vistas of strange architecture and light as if behind a curtain. Cries echo through the woods around you as it shuts...";
+		OptionOne = "Find the source";
+		OptionTwo = "Must've been the wind";
+	}
+
+	public Texture ScenarioFiftyThreeOutcome(int outcome){
+		Texture texture=defaultTexture;
+		if(outcome==1){
+			EventText = "You track the source to a strange bee glowing with eldritch energy...";
+			CloseText = "Not sure I like this.";
+			beeQuantity = 1;
+			foreach(GameObject text in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				if(text.GetComponentInChildren<RawImage>().texture.name=="diligent"){
+					texture=text.GetComponentInChildren<RawImage>().texture;	
+					break;
+				}
+			}
+		}else{
+			EventText = "Some things are best not disturbed";
+			CloseText = "I feel suffocated...";
+		}
+		return texture;
+	}
+
+	//GRASSLAND
+	public void ScenarioSixetyOne(){
+		ScenarioId=61;
+		HeaderText = "War";
+		EventText = "Over a field ahead of you lays two clans of bright red bees. To your attuned eye you can see they aren't quite the same, and a turf war seems to be in progress...";
+		OptionOne = "Resolve the dispute";
+		OptionTwo = "Leave them be";
+	}
+	public Texture ScenarioSixetyOneOutcome(int outcome){
+		if(outcome==1&&backpack.itemTruth["sword"]){
+			EventText = "You draw your sword and enter the field. At first the bees seem aggrivated but soon die down - it seems they respect your martial presence and disperse.";
+			CloseText = "Not sure I like this.";
+			honeyResult=Random.Range(20,60);
+		}else if(outcome==1){
+			EventText = "You shout reason at the bees for some time but they only look back at you perplexed. This soon turns to anger and they descend on you in droves. You barely make it to a nearby river before they catch you.";
+			CloseText = "Oh no";
+			foodResult=Random.Range(-20,-10);
+			waterResult=Random.Range(-20,-10);
+		}else{
+			EventText = "Probably a good idea given the nature of these bees.";
+			CloseText = "Onwards";
+		}
+		return null;
+	}
+
+	public void ScenarioSixetyTwo(){
+		ScenarioId=62;
+		HeaderText = "Exploration";
+		EventText = "The delicate and desolate grasslands have given you time to think and reflect... you feel like you have learnt a lesson.";
+		OptionOne = "Bees";
+		OptionTwo = "The World";
+	}
+	public Texture ScenarioSixetyTwoOutcome(int outcome){
+		if(outcome==1){
+			EventText = "Bee keeping is about patience you decide. You owe as much to them as they owe to you...";
+			CloseText = "You feel grateful";
+		}else if(outcome==2){
+			EventText = "Taming this world is not for men, but for bees. Without them the forests would dry up.";
+			CloseText = "You feel grateful";
+		}
+		return null;
+	}
+	public void ScenarioSixetyThree(){
+		ScenarioId=63;
+		HeaderText = "";
+		EventText = "";
+		OptionOne = "";
+		OptionTwo = "";
+	}
+
+	//DESERT: oasis, lesson about hardship of desert, meet an alchemist (shop keepers brother)
+
+
+
+	public void yuckyIf(int rand, Hex hex){
+
+		Debug.Log(hex.Elevation + " , " + rand);
+		if(identifyTile(hex,"mountain")){//we are on a mountain tile 
+			if(rand==1){
+				ScenarioSix(); //stone bees
+			}else if(rand==2){
+				ScenarioSix(); //stone bees
+			}else if(rand==3){
+				ScenarioFour(); //ice bees
+			}else if(rand==4){
+				ScenarioThirtyOne();
+			}else if(rand==5){
+				ScenarioThirtyTwo();
+			}else if(rand==6){
+				ScenarioThirtyThree();
+			}else{
+				restOfIf(rand);
+			}
+		}else if(identifyTile(hex,"snow")){//we are on a snow tile
+			if(rand==1){
+				ScenarioFour(); //ice bees
+			}else if(rand==2){
+				ScenarioFour(); //ice bees
+			}else if(rand==3){
+				ScenarioSix(); //stone bees
+			}else if(rand==4){
+				ScenarioFourtyOne();
+			}else if(rand==5){
+				ScenarioFourtyTwo();
+			}else if(rand==6){
+				ScenarioFourtyThree();
+			}else{
+				restOfIf(rand);
+			}
+		}else if(identifyTile(hex,"forest")){//we are on a forest tile
+			if(rand==1){
+				ScenarioFive(); //forest bees
+			}else if(rand==2){
+				ScenarioFive(); //forest bees
+			}else if(rand==3){
+				ScenarioThree(); //warrior bees
+			}else if(rand==4){
+				ScenarioFiftyOne();
+			}else if(rand==5){
+				ScenarioFiftyTwo();
+			}else if(rand==6){
+				ScenarioFiftyThree();
+			}else{
+				restOfIf(rand);
+			}
+		}else if(identifyTile(hex,"grassland")){//we are on a grassland tile
+			if(rand==1){
+				ScenarioThree(); //warrior bees
+			}else if(rand==2){
+				ScenarioThree(); //warrior bees
+			}else if(rand==3){
+				ScenarioFive(); //forest bees
+			}else if(rand==4){
+				ScenarioSixetyOne();
+			}else if(rand==5){
+				ScenarioSixetyTwo();
+			}else if(rand==6){
+				ScenarioSixetyThree();
+			}else{
+				restOfIf(rand);
+			}
+		}else if(identifyTile(hex, "desert")){//we are on a desert tile
+			if(rand==1){
+				ScenarioEight(); //shore bees
+			}else if(rand==2){
+				ScenarioEight(); //shore bees
+			}else if(rand==3){
+				ScenarioSeven(); //ocean bees
+			}else if(rand==4){
+				//ScenarioSeventyOne();
+			}else if(rand==5){
+				//ScenarioSeventyTwo();
+			}else if(rand==6){
+				//ScenarioSeventyThree();
+			}else{
+				restOfIf(rand);
+			}
+		}else{ //we are on an ocean tile. If we are here we are assuming we have the boat as movement was allowed
+			if(rand==1){
+				ScenarioSeventy(); //ocean bees
+			}else if(rand==2){
+				ScenarioSeventy(); //ocean bees
+			}else if(rand==3){
+				ScenarioEighty(); //shore bees
+			}else if(rand==4){
+				//ScenarioEightyOne();
+			}else if(rand==5){
+				///ScenarioEightyTwo();
+			}else if(rand==6){
+				//ScenarioEightyThree();
+			}else{
+				//OceanIf(rand);
+			}
+		}
+	}
+
+	public void restOfIf(int rand){ //if none of the other events occur
+		rand = Random.Range(7,21);
+		if(rand==7){
 			ScenarioOne();
-		}else if(rand==2){
-			ScenarioTwo();
-		}else if(rand==3){
-			ScenarioThree();
-		}else if(rand==4){
-			ScenarioFour();
-		}else if(rand==5){
-			ScenarioFive();
-		}else if(rand==6){
-			ScenarioSix();
-		}else if(rand==7){
-			ScenarioSeven();
 		}else if(rand==8){
-			ScenarioEight();
-		
-		//BOOK SCENARIOS: LORE ABOUT BEES. ALL HAVE THE SAME STARTING PASSAGE NEARLY
+			ScenarioTwo();
 		}else if(rand==9&&backpack.itemTruth["book"]){
 			ScenarioNine();
 		}else if(rand==10&&backpack.itemTruth["book"]){
@@ -697,7 +1190,7 @@ public class ScenarioManager : MonoBehaviour {
 		}else if(rand==19&&backpack.itemTruth["book"]){
 			ScenarioNineteen();		
 		}else if(rand==20){
-			//ScenarioTwenty();
+			ScenarioTwenty();
 		}else if(rand==21){
 			//ScenarioTwentyOne();
 		}else if(rand==22){
@@ -719,8 +1212,8 @@ public class ScenarioManager : MonoBehaviour {
 		}else if(rand==30){
 			//ScenarioThirty();
 		}else{
-			rand = Random.Range(0,15);
-			yuckyIf(rand);
+			rand = Random.Range(7,21);
+			restOfIf(rand); //might be something to do with here
 		}
 	}
 
@@ -739,8 +1232,12 @@ public class ScenarioManager : MonoBehaviour {
 			return ScenarioSixOutcome(rand);
 		}else if(ScenarioId==7){
 			return ScenarioSevenOutcome(rand);
+		}else if(ScenarioId==70){
+			return ScenarioSeventyOutcome(rand);
 		}else if(ScenarioId==8){
 			return ScenarioEightOutcome(rand);
+		}else if(ScenarioId==80){
+			return ScenarioEightyOutcome(rand);
 		}else if(ScenarioId==9){
 			return ScenarioNineOutcome(rand);
 		}else if(ScenarioId==10){
@@ -764,7 +1261,7 @@ public class ScenarioManager : MonoBehaviour {
 		}else if(ScenarioId==19){
 			return ScenarioNineteenOutcome(rand);		
 		}else if(ScenarioId==20){
-			//ScenarioTwentyOutcome(rand);
+			return ScenarioTwentyOutcome(rand);
 		}else if(ScenarioId==21){
 			//ScenarioTwentyOneOutcome(rand);
 		}else if(ScenarioId==22){
@@ -785,7 +1282,20 @@ public class ScenarioManager : MonoBehaviour {
 			//ScenarioTwentyNineOutcome(rand);		
 		}else if(ScenarioId==30){
 			//ScenarioThirtyOutcome(rand);
+		}else if(ScenarioId==31){
+			return ScenarioThirtyOneOutcome(rand);
+		}else if(ScenarioId==32){
+			return ScenarioThirtyTwoOutcome(rand);
+		}else if(ScenarioId==33){
+			return ScenarioThirtyThreeOutcome(rand);
+		}else if(ScenarioId==41){
+			return ScenarioFourtyOneOutcome(rand);
+		}else if(ScenarioId==42){
+			return ScenarioFourtyTwoOutcome(rand);
+		}else if(ScenarioId==43){
+			return ScenarioFourtyThreeOutcome(rand);
 		}
+		eventsThatHaveOccured.Add(ScenarioId);
 		return null;
 	}
 }

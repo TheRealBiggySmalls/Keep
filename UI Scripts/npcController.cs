@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class npcController : MonoBehaviour {
 
-	public GameObject map;
+	public GameObject map; 
 	public GameObject apiary;
 	public Texture[] allItemTextures; //initialised in the editor
 	private Item[] allItems;
@@ -127,6 +127,7 @@ public class npcController : MonoBehaviour {
 
 		positionCorrect(instance);
 		instance.SetActive(true);
+		checkHoneyBalance(); //visual aid for if player has insufficient honey
 	}
 
 	public void positionCorrect(GameObject obj){
@@ -173,12 +174,29 @@ public class npcController : MonoBehaviour {
 		for(int i=0;i<toGenerate;i++){
 			
 			int item = generateItem();
-			//CREATE INDEX IN ARRAY OF UNIQUE ITEMS BOUGHT
-			
+			Debug.Log(allItems[item].type);
 			//regenerates duplicates 
-			//TODO: regenerate items that the player has already bought
-			while(indexIn.Contains(item)){
-				item = generateItem();
+			int count=0;
+			while(true){ 
+				if(allItems[item].type=="unique"){ //regenerate if item is unique
+					if(backpack.itemTruth[allItems[item].identifier]){
+						item = generateItem();
+					}else if(indexIn.Contains(item)){ //regenerate if item is unique and already in indexIn
+						item=generateItem();
+					}else{
+						break;
+					}
+				}else{
+					if(indexIn.Contains(item)){ //regenerate if item is not unique
+						item=generateItem();
+					}else{
+						break;
+					}
+				}
+				if(count>20){
+					break;
+				}
+				count++;
 			}
 
 			itemsToReturn.Add(allItems[item]);
@@ -191,6 +209,28 @@ public class npcController : MonoBehaviour {
 	public int generateItem(){
 		int rand = Random.Range(2,allItems.Length);
 		return rand;
+	}
+
+	public void checkHoneyBalance(){ //changes colour of honeyCost text if the user has insufficient funds. Need this function to check ALL costs
+		int index=0;
+		foreach(Item item in shopInventory){ //could've really had all the shop slots in an array and then index could be used inplicitly
+			if(item.tempCost>player.Honey){
+				if(index==0){
+					slotOne.GetComponentInChildren<Text>().color=Color.red;
+				}else if(index==1){
+					slotTwo.GetComponentInChildren<Text>().color=Color.red;
+				}else if(index==2){
+					slotThree.GetComponentInChildren<Text>().color=Color.red;
+				}else if(index==3){
+					slotFour.GetComponentInChildren<Text>().color=Color.red;
+				}else if(index==4){
+					slotFive.GetComponentInChildren<Text>().color=Color.red;
+				}else if(index==5){
+					slotSix.GetComponentInChildren<Text>().color=Color.red;
+				}
+			}
+			index+=1;
+		}
 	}
 
 	public Character player;
@@ -216,6 +256,7 @@ public class npcController : MonoBehaviour {
 				player.UpdateResources(0,item.tempQuantity,0);
 				Debug.Log("BOUGHT" + item.identifier);
 			}
+			regenerateCosts(item, slot);
 		}else if(item.type=="bee"){ //FOR BEE
 			foreach(GameObject bee in apiaryOrg.bees){
 				if(item.identifier==bee.GetComponentInChildren<Bee>().type){
@@ -227,19 +268,29 @@ public class npcController : MonoBehaviour {
 				}
 				Debug.Log("BOUGHT" + item.identifier);
 			}
+			regenerateCosts(item, slot);
 		}else if(item.type=="unique"){//FOR UNIQUES
 			buyUniqueItem(item.identifier);
 			Debug.Log("BOUGHT" + item.identifier);
+			updateSlotTextures(slot);
 		}
 		
-		//TODO: set image sprite to X if honeyCost is not enough
+		checkHoneyBalance();
+	}
 
-		//set temp quant and cost to 0
-		if(item.type=="unique"){
-			item.tempCost=0; //doesnt change as visuals arent updated
-			item.tempQuantity=0;
-			slot.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
-		}//TODO: else regenerate costs?
+	public void regenerateCosts(Item item, Image slot){
+		Text[] texts = slot.GetComponentsInChildren<Text>();
+		texts[0].text = item.generateHoneyCost().ToString();
+		texts[1].text = item.generateQuantity().ToString();
+	}
+
+	public void updateSlotTextures(Image slot){
+		slot.GetComponentInChildren<RawImage>().enabled=false; //can re-set the graphic here to something really nice and friendly if we want :^). Just turn it off atm
+		Text[] texts = slot.GetComponentsInChildren<Text>();
+		texts[0].text=""; //CAN do a foreach text in texts here but not really necessary. Is a lot cleaner I guess
+		texts[1].text=":^)";
+		slot.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
+		slot.GetComponentsInChildren<Image>()[1].enabled = false; //disables honey graphic
 	}
 
 	public void buyUniqueItem(string nam){
@@ -329,7 +380,7 @@ public class npcController : MonoBehaviour {
 		}else if(rand==16){
 			dialogueText.text = "When cross-breeding, at least one of your most dominant bees should stick around!";
 		}else if(rand==17){
-
+			dialogueText.text = "Sticky Comb will double your chances of getting mutations when cross-breeding! As well as generally increasing the strength of the species in your dominant slot!";
 		}else if(rand==18){
 
 		}else if(rand==19){
@@ -388,7 +439,7 @@ public class npcController : MonoBehaviour {
 			}else if(item.identifier=="shoe"){
 				item.assignValues("unique",new int[2] {74,105},new int[2] {1,1});
 			}else if(item.identifier=="cloak"){
-				item.assignValues("unique",new int[2] {138,241},new int[2] {1,1});
+				item.assignValues("unique",new int[2] {179,341},new int[2] {1,1});
 			}
 		}
 	}

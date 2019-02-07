@@ -14,7 +14,7 @@ public class ApiaryOrganiser : MonoBehaviour {
 	public List<GameObject> bees;
 	private int breedTimer;
 	private Breeding breed;
-	private Text breedText;
+	private Text breedText; private Text apiaryDoneText;
 
 	private readonly float xScale = 0.33f,yScale=0.55f;
 
@@ -35,6 +35,8 @@ public class ApiaryOrganiser : MonoBehaviour {
 			if(results.Length<1){
 				return 0;
 			}
+
+			//IF TIMER IS DONE WE SHOULD GIVE AN ALERT TO USER THAT APIARY IS DONE: MAKE ONE MORE SPRITE WITH LITTLE ! AND CHANGE SPRITE
 
 			//values in breed should be the same so i dont need to restore them
 			Debug.Log("Results: " + results[0] + " " + results[1] + " " + results[2]);
@@ -73,6 +75,8 @@ public class ApiaryOrganiser : MonoBehaviour {
 
 			breedTimerText(-100); //hard reset
 
+			apiaryDoneText.enabled=true;
+
 			return honeyResults;
 		}else{
 			breedTimerText(-1);
@@ -91,6 +95,9 @@ public class ApiaryOrganiser : MonoBehaviour {
 		}
 	}
 	public void ShowApiaryWindow(){
+		if(apiaryDoneText.enabled){
+			apiaryDoneText.enabled=false;
+		}
 		apiaryWindow.SetActive(true);
 	}
 
@@ -197,6 +204,8 @@ public class ApiaryOrganiser : MonoBehaviour {
 		honeyResultText = tiles[tiles.Length-1];
 		Image[] gm = apiaryWindow.GetComponentsInChildren<Image>();
 		toolTip = gm[gm.Length-1].gameObject;
+
+		apiaryDoneText = GameObject.Find("Canvas").GetComponentInChildren<Button>().GetComponentInChildren<Text>();
 	}
 	public void initBees(){
 		foreach(GameObject bee in bees) { 
@@ -235,13 +244,13 @@ public class ApiaryOrganiser : MonoBehaviour {
 
 	//only used for initialisation (???) might be an obsolete function
 	public void hideBeesOnTiles(){
+		apiaryDoneText.enabled=false;
 		beeSlotOne.enabled =false;
 		beeSlotTwo.enabled =false;
-		//LATER: when we enable this we just set the rawimage to whatever was clicked and reenable it
 	}
 
 	public void addBeeToApaiary(GameObject obj){
-		//NEED TO FIND WHICH BEE WAS CLICKED
+
 		Bee currentBee = obj.GetComponentInChildren<Bee>();
 
 		if(currentBee.quantity>0){

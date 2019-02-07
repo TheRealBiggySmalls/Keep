@@ -8,7 +8,7 @@ public class UniquesBackpack : MonoBehaviour {
 	public Texture defaultTexture;
 
 	public GameObject UniquesWindow; public GameObject tooltipWindow;
-	//OBJECTS: boat, book-o-compliments, pickaxe, honeycomb, sword, flower, robot, shoes, hazmat suit, oneMore
+	//OBJECTS: boat, book-o-compliments, pickaxe, honeycomb, sword, flower, robot, shoes, null magic cloak, dimensional rip
 	public List<GameObject> uniqueSlots;
 
 	public Dictionary<string, bool> itemTruth;
@@ -61,7 +61,7 @@ public class UniquesBackpack : MonoBehaviour {
 				if(texture.name=="boat"){
 					uniItem.SetUniqueItemParams("boat", "Fishermans Rowey", "An old rowboat used for basic fishing", texture, tooltipWindow);
 				}else if(texture.name=="book"){
-					uniItem.SetUniqueItemParams("book", "Bee Compendium","A must have for every budding beekeeper and bee enthusiast!", texture, tooltipWindow);
+					uniItem.SetUniqueItemParams("book", "Bee Compendium","A must have for every budding beekeeper and bee enthusiast! It has many things to teach you about this world.", texture, tooltipWindow);
 				}else if(texture.name=="pickaxe"){
 					uniItem.SetUniqueItemParams("pickaxe", "Glass Pickaxe","A delicate pickaxe left behind from when the hills ran dry. Stronger than diamond.", texture,tooltipWindow);
 				}else if(texture.name=="honeycomb"){
@@ -75,7 +75,9 @@ public class UniquesBackpack : MonoBehaviour {
 				}else if(texture.name=="shoe"){
 					uniItem.SetUniqueItemParams("shoe", "Yeezys","A pair of squeak proof sneakers.",texture,tooltipWindow);
 				}else if(texture.name=="cloak"){
-					uniItem.SetUniqueItemParams("cloak", "Magic Proof Robe","A special robe that protects the wearer from all kinds of unnatural effects!",texture,tooltipWindow);
+					uniItem.SetUniqueItemParams("cloak", "Null Magic Robe","A special robe that protects the wearer from all kinds of unnatural effects!",texture,tooltipWindow);
+				}else if(texture.name=="hole"){
+					uniItem.SetUniqueItemParams("hole", "Dimensional Rip","What have you done...",texture,tooltipWindow);
 				}
 			}else{
 				uniItem.SetUniqueItemParams("PLACEHOLDER", "PLACEHOLDER","PLACEHOLDER", defaultTexture,tooltipWindow);

@@ -134,7 +134,7 @@ public class Bee : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 			dominant = true;
 			description = "This peculiar bee sees to exist half in our reality and half in another, phasing in and out at will!";
 		}else if(this.type=="mutant"){ //MUTANT AND TOXIC ARE SWITCHED
-			displayName = "Toxic";
+			displayName = "Mutant";
 			nature = "Lonely";
 			dominant = true;
 			description = "Hideous and deformed";
@@ -174,7 +174,7 @@ public class Bee : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 			dominant = true;
 			description = "Heavier than a dog, and slower than a snail";
 		}else if(this.type=="toxic"){ //TOXIC AND MUTANT ARE SWITCHED NAMEWISE
-			displayName = "Mutant";
+			displayName = "Toxic";
 			nature = "???";
 			dominant = true;
 			description = "This bee does not seem well";

@@ -20,7 +20,7 @@ public class Map : MonoBehaviour {
 	//ONLY need top meshes. Change colour of base hex but it's always the same. Change mesh
 	//of topHex
 	public Mesh MeshWater;//DEFAULT hex mesh (hex11)
-	public Mesh TopMountain; public Mesh selectableMesh; public Mesh houseMesh; public Mesh[] TopDesert; public Mesh[] TopForest; public Mesh[] TopPlains; public Mesh[] TopSnow;
+	public Mesh TopMountain; public Mesh[] storyFlowers; public Mesh selectableMesh; public Mesh houseMesh; public Mesh[] TopDesert; public Mesh[] TopForest; public Mesh[] TopPlains; public Mesh[] TopSnow;
 	public Material MatOcean;public Material MatPlains;public Material MatDesert;public Material MatMountains;public Material MatForest;public Material MatGrasslands;public Material MatSnow;
 
 	//tiles with height above ____ are considered ____
@@ -56,6 +56,8 @@ public class Map : MonoBehaviour {
 		FocusCameraOnBoy();
 		highlightSelectableTiles(player.currentHex);
 		ChangeResourceText.UpdateUIResources(player.Food,player.Water, player.Honey);
+		Random.InitState(1);
+		placeFlowers(); //CAN: place this after reinit of random for more fun generation if we want
 
 		//rerandomises the seed so debugging isnt no fun
 		Random.InitState(System.Environment.TickCount);
@@ -146,6 +148,34 @@ public class Map : MonoBehaviour {
 			}
 		}
 		//StaticBatchingUtility.Combine(this.gameObject);
+	}
+
+	public void placeFlowers(){
+		//Hard codes father's memories into castles
+		//castles need some entry condition
+		//THIS WAY: we can link bee progression to story progression
+
+		int numPlaced=0,numDesired=5;
+
+		while(numPlaced<numDesired){
+			int row = (int)Random.Range(0,numRows);
+			int column = (int)Random.Range(0,numCols);
+
+			Hex candidate = hexes[column,row]; //could use GetHexAt
+
+			if(candidate.Elevation>0){ //checks hex is not a water tile
+
+				string objString = string.Format("HEX: " + column + ", " + row);
+				GameObject obj = GameObject.Find(objString);
+				Transform t = obj.GetComponentInChildren<Transform>().Find("Hex11").Find("HexTop");
+				MeshFilter mf = t.GetComponentInChildren<MeshFilter>();
+				
+				mf.mesh = storyFlowers[numPlaced];//hard spawning only castles at the moment
+				numPlaced+=1;
+			}
+		}
+
+		//STORE THESE AS HEXES/STRINGS OR WHATEVER SO WE KNKOW WHEN WE ARE ON A STORY HEX
 	}
 
 	public void UpdateHexVisuals(){
