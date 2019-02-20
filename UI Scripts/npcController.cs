@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+[System.Serializable]
+
 public class npcController : MonoBehaviour {
 
 	public GameObject map; 
@@ -135,7 +137,7 @@ public class npcController : MonoBehaviour {
 		obj.transform.localScale=Vector3.one;
 
 		//Setting position to be correct
-		defaultPos.y = Screen.height/2;
+		defaultPos.y = Screen.height/2 -30;
 		defaultPos.x = Screen.width/2;
 		obj.transform.position = defaultPos;
 	}
@@ -333,6 +335,7 @@ public class npcController : MonoBehaviour {
 	public void CloseNpc(){
 		Destroy(instance);
 		shopInventory=null;
+		player.currentHex.hexMap.highlightSelectableTiles(player.currentHex);//roundabout/super messy but should fix bug where tiles aren't highlighted after buying food
 	}
 
 	//onClick for rumour button. Should use enums but meh
@@ -346,13 +349,13 @@ public class npcController : MonoBehaviour {
 			return;
 		} //catch block so only a few rumours can be accessed at a time
 
-		int rand = Random.Range(0,20);
+		int rand = (int)Random.Range(0,22.99f);
 		if(rand==1){
 			dialogueText.text = "Even at sea I've heard strange buzzing at night.";
 		}else if(rand==2){
 			dialogueText.text = "Folks tell of a man who bred a bee so dangerous it turned his farm into a wasteland...";
 		}else if(rand==3){
-			dialogueText.text = "Always think before cross-breeding... dangerous traits can arise.";
+			dialogueText.text = "Always think before cross-breeding higher tier bees... dangerous traits can arise.";
 		}else if(rand==4){
 			dialogueText.text = "Are you sure you're alone on this island? Funny, I thought I saw... nevermind.";
 		}else if(rand==5){
@@ -367,26 +370,39 @@ public class npcController : MonoBehaviour {
 			dialogueText.text = "I used to visit another island close to here but recently I haven't been able to find it. It's as if the whole place has sunk!";
 		}else if(rand==10){
 			dialogueText.text = "Be sure to get the Bee-Compendium if you can! It is a must have for all budding bee keepers!";
+			if(!backpack.itemTruth["book"]){
+				Journal.addStringToRumoursPage("Be sure to get the Bee-Compendium if you can! It is a must have for all budding bee keepers!", "book");
+			}
 		}else if(rand==11){
 			dialogueText.text = "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn... Oh sorry! Just clearing my throat.";
 		}else if(rand==12){
 			dialogueText.text = "I've heard there are certain rare bees that won't interact with lesser developed species.";
+			Journal.addStringToRumoursPage("I've heard there are certain rare bees that won't interact with lesser developed species.","shop");
 		}else if(rand==13){
-			dialogueText.text = "NOOOOOOO.... NOT THE BEES.... NO GOD NO!";
+			dialogueText.text = "If you start finding rarer and stranger bees pleasure make sure to take the proper precautions before putting them in the apiary!";
+			Journal.addStringToRumoursPage("If you start finding rarer and stranger bees pleasure make sure to take the proper precautions before putting them in the apiary!", "shop");
 		}else if(rand==14){
 			dialogueText.text = "I swear I have seen a human made entierely of bees! Or at least it looked like a human...";
 		}else if(rand==15){
 			dialogueText.text = "If you're cold and emotionless like me just find some of those bees near the water. Their siren song will make you weep in seconds!";
 		}else if(rand==16){
-			dialogueText.text = "When cross-breeding, at least one of your most dominant bees should stick around!";
+			dialogueText.text = "When cross-breeding, at least one of the bee in your dominant slot should stick around!";
+			Journal.addStringToRumoursPage("When cross-breeding, at least one of the bee in your dominant slot should stick around!", "shop");
 		}else if(rand==17){
 			dialogueText.text = "Sticky Comb will double your chances of getting mutations when cross-breeding! As well as generally increasing the strength of the species in your dominant slot!";
 		}else if(rand==18){
-
+			dialogueText.text = "Have you tried exploring the various abandoned outlets around the island? This place was once teeming with activity - who knows what it's hiding...";
 		}else if(rand==19){
-
+			dialogueText.text = "If you're struggling to find a bee, try exploring different biomes! Each one has it's own native species!";
+			Journal.addStringToRumoursPage("If you're struggling to find a bee, try exploring different biomes! Each one has it's own native species!", "shop");
 		}else if(rand==20){
-
+			dialogueText.text = "Make sure to buy miscellaneous items! You may need them to aquire certain kinds of bees!";
+			Journal.addStringToRumoursPage("Make sure to buy miscellaneous items! You may need them to aquire certain kinds of bees!", "shop");
+		}else if(rand==21){
+			dialogueText.text = "Bland bees are quite boring! They very rarely result in mutations occuring in my experience.";
+			Journal.addStringToRumoursPage("Bland bees are quite boring! They very rarely result in mutations occuring in my experience.", "shop");
+		}else if(rand==22){
+			dialogueText.text = "Be sure to spend your honey wisely! Common bees won't generate very much in the apiary.";
 		}
 
 	}

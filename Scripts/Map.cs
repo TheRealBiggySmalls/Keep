@@ -2,10 +2,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using QPath;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+
+[System.Serializable]
 
 //QPATH is just a set of interfaces to make pathfinding generic for later projects
 public class Map : MonoBehaviour {
 
+	
 	//make map stay around after being rendered once
 	public GameObject hexPrefab;
 	public GameObject selectionPrefab;
@@ -61,6 +66,9 @@ public class Map : MonoBehaviour {
 
 		//rerandomises the seed so debugging isnt no fun
 		Random.InitState(System.Environment.TickCount);
+		if(player!=null){
+			player.highlightCurrentObjective(0);
+		}
 	}
 
 	public void doTurn(){
@@ -147,10 +155,12 @@ public class Map : MonoBehaviour {
 
 			}
 		}
-		//StaticBatchingUtility.Combine(this.gameObject);
 	}
 
+	public List<Hex> storyLocations; //reordered to be chronological
 	public void placeFlowers(){
+		storyLocations = new List<Hex>();
+
 		//Hard codes father's memories into castles
 		//castles need some entry condition
 		//THIS WAY: we can link bee progression to story progression
@@ -172,10 +182,9 @@ public class Map : MonoBehaviour {
 				
 				mf.mesh = storyFlowers[numPlaced];//hard spawning only castles at the moment
 				numPlaced+=1;
+				storyLocations.Add(candidate);
 			}
 		}
-
-		//STORE THESE AS HEXES/STRINGS OR WHATEVER SO WE KNKOW WHEN WE ARE ON A STORY HEX
 	}
 
 	public void UpdateHexVisuals(){

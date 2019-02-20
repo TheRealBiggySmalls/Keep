@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+
+[Serializable]
 
 public class UniquesBackpack : MonoBehaviour {
 
@@ -28,10 +31,11 @@ public class UniquesBackpack : MonoBehaviour {
 	}
 
 	public void createDict(){
-		if(itemTruth!=null){
-			itemTruth=null;
+		if(itemTruth==null){
+			itemTruth = new Dictionary<string, bool>();
 		}
-		itemTruth = new Dictionary<string, bool>(); //HAVE TO REININT DICT
+		itemTruth.Clear();
+		//itemTruth = new Dictionary<string, bool>(); //HAVE TO REININT DICT
 		foreach(GameObject obj in uniqueSlots){
 			UniqueItem item = obj.GetComponentInChildren<UniqueItem>();
 			itemTruth.Add(item.uniqueName, item.activated);

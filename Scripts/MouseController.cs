@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class MouseController : MonoBehaviour {
 
@@ -54,6 +55,7 @@ public class MouseController : MonoBehaviour {
 		}else if(Input.GetMouseButton(0) && Input.mousePosition != lastMousePosition){
 			//TODO: consider adding in some pixel jitter threshold
 			//left mouse is being held down and camera is being dragged
+
 			Update_CurrentFunction = Update_CameraDrag;
 			lastMouseGroundPlanePosition = CheckHitPos(Input.mousePosition);
 			Update_CurrentFunction();
@@ -100,9 +102,14 @@ public class MouseController : MonoBehaviour {
 		return;
 	}
 
+	const float minX=17.0f, minZ=0.0f, maxX=35.0f,maxZ=10.0f;
 	void Update_CameraDrag () {
 
-		//TODO: lock drag within a certain portion of the gameworld so it's borders are never revealed
+		if(EventSystem.current.IsPointerOverGameObject()){ //over UI so we want to cancel
+			CancelUpdateFunction();
+			return;
+		}
+		
 		if(Input.GetMouseButtonUp(0)){
 			CancelUpdateFunction();
 			return;
@@ -113,10 +120,29 @@ public class MouseController : MonoBehaviour {
 		Vector3 diff = hitPos-lastMouseGroundPlanePosition;
 		Camera.main.transform.Translate(diff, Space.World);
 
+		Vector3 p = Camera.main.transform.position;
+		if(p.y<4.0f||p.y>4.0f){
+			p.y=4.0f;
+		} 
+		//Locks drag within a certain area
+		if(p.x<minX){
+			p.x=minX;
+		}else if(p.x>maxX){
+			p.x=maxX;
+		}
+		if(p.z<minZ){
+			p.z=minZ;
+		}else if(p.z>maxZ){
+			p.z=maxZ;
+		}
+		//This fixes the "drag-through-the-ground" error and locks world map to a specific area so you dont get to see the "void"
+		Camera.main.transform.position = p;
+
 		lastMouseGroundPlanePosition=hitPos=CheckHitPos(Input.mousePosition);
 	}
 
 	void Update_ScrollZoom(){
+		return;
 		//return; //DONE FOR NOW AS ZOOMING ISNT PARTICULARLY REQUIRED
 		//FOR ZOOMING (Zoom to scrollwheel)
 		float scrollAmount = Input.GetAxis("Mouse ScrollWheel");

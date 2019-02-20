@@ -72,38 +72,38 @@ public class Bee : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 			description = "A staple of apiaries around the globe";
 		}else if(this.type=="diligent"){
 			displayName = "Diligent";
-			nature = "Busy";
+			nature = "???";
 			dominant = true;
-			description = "A whir of activity";
+			description = "Pulsating with Occult energies";
 		}else if(this.type=="diligentWorker"){
-			displayName = "Factory";
-			nature = "Industrious";
+			displayName = "Black Hole";
+			nature = "???";
 			dominant = true;
-			description = "So focused on producing he forgets to smell the flowers";
+			description = "A strange power draws this to unending energy";
 		//will kill off other bees in your hive if above a certain percentage
 		}else if(this.type=="diligentWarrior"){
 			displayName = "Killer";
 			nature = "Hostile";
 			dominant = true;
-			description = "Watch out! This one cares only for death";
+			description = "The death of the Universe";
 		//exotic should have a chance to produce any bee
 		}else if(this.type=="exotic"){
 			displayName = "Strange";
 			nature = "???";
 			dominant = false;
-			description = "???";
+			description = "One would think the laws of physics are wrong after observing this little critter";
 		}else if(this.type=="exoticShore"){
-			displayName = "Strange";
+			displayName = "Void";
 			nature = "???";
 			dominant = false;
-			description = "???";
+			description = "The world is starting to break, and warps in weird shapes around this creature";
 		}else if(this.type=="exoticWorker"){
-			displayName = "Strange";
+			displayName = "Infinibee";
 			nature = "???";
 			dominant = false;
-			description = "???";
+			description = "A strange power draws this to twisted blackness";
 		}else if(this.type=="forest"){
-			displayName = "Natural";
+			displayName = "Forest";
 			nature = "Pure";
 			dominant = true;
 			description = "A child of the Earth";
@@ -114,40 +114,40 @@ public class Bee : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 			description = "Cold to the touch. Prefers to live in isolation outside of the hive";
 		}else if(this.type=="intelligent"){
 			displayName = "Intelligent";
-			nature = "Clever";
+			nature = "???";
 			dominant = true;
-			description = "Always finding ways to work smarter, not harder";
+			description = "The mental capacity of these bees is noteworthy";
 		//will form a hive mind and create a npc that tries to steal your resources
 		}else if(this.type=="intelligentCommon"){
-			displayName = "Practical";
-			nature = "Inspired";
-			dominant = false;
-			description = "Unconfirmed sources report their ability to play chess";
-		}else if(this.type=="intelligentNice"){
 			displayName = "Genius";
-			nature = "Lazy";
+			nature = "???";
 			dominant = false;
-			description = "More likely to make you work for it";
+			description = "Knows things that would drive the sturdiest man mad";
+		}else if(this.type=="intelligentNice"){
+			displayName = "Horny Bee";
+			nature = "Horny";
+			dominant = true;
+			description = "So potent it will eventually out-fuck all other animals until it is the last remaining life form in the Universe";
 		}else if(this.type=="magic"){
 			displayName = "Magical";
 			nature = "Miraculous";
 			dominant = true;
-			description = "This peculiar bee sees to exist half in our reality and half in another, phasing in and out at will!";
+			description = "This peculiar bee seems to exist half in our reality and half in another, phasing in and out at will";
 		}else if(this.type=="mutant"){ //MUTANT AND TOXIC ARE SWITCHED
 			displayName = "Mutant";
-			nature = "Lonely";
+			nature = "???";
 			dominant = true;
 			description = "Hideous and deformed";
 		}else if(this.type=="mutantMagic"){
-			displayName = "Abomination";
-			nature = "Disgusting";
+			displayName = "Eldritch";
+			nature = "Wyrd";
 			dominant = true;
 			description = "Some things are best left forgotten";
 		}else if(this.type=="mutantToxic"){
-			displayName = "Stank";
-			nature = "Incredibly Dangerous";
+			displayName = "Radioactive";
+			nature = "Sickly";
 			dominant = true;
-			description = "The result of a horribly failed experiment in which a 20-something year old Spanish man tried to turn himself into a bee to fullfill his lifelong sexual fantasies.";
+			description = "The physical manifestation of decay";
 		}else if(this.type=="nice"){
 			displayName = "Nicey";
 			nature = "Kind";
@@ -162,14 +162,14 @@ public class Bee : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 			displayName = "Plain";
 			nature = "Simple";
 			dominant = false;
-			description = "Simple and hardy. Found everywhere you wouldn't expect it to be";
+			description = "Simple and hardy. Found everywhere despite its timid nature";
 		}else if(this.type=="shore"){
 			displayName = "Water";
 			nature = "Agitated";
 			dominant = true;
-			description = "At night it sings out to its lost brothers, as if stranded";
+			description = "At night it sings out to its brothers, as if stranded or lost";
 		}else if(this.type=="stone"){
-			displayName = "Metallic";
+			displayName = "Stone";
 			nature = "Stubborn";
 			dominant = true;
 			description = "Heavier than a dog, and slower than a snail";
@@ -177,7 +177,7 @@ public class Bee : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 			displayName = "Toxic";
 			nature = "???";
 			dominant = true;
-			description = "This bee does not seem well";
+			description = "Its flesh drips relentlessly... it is a wonder it is able to hold together at all";
 		}else if(this.type=="warrior"){
 			displayName = "Warrior";
 			nature = "Aggressive";
@@ -187,7 +187,7 @@ public class Bee : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 			displayName = "Worker";
 			nature = "Busy";
 			dominant = true;
-			description = "Always busy at work";
+			description = "A true friend to the flowers";
 		}
 	}
 }
