@@ -4,21 +4,18 @@ using UnityEngine;
 using QPath;
 using UnityEngine.UI;
 
+[System.Serializable]
+
 public class Character {
 
-	//RESOURCES. Honey should not be a flat resource, instead individual combs with different stats
-	//Same as bees should be an array resouce, same as honey
-	//Maybe trade for coins which can be used to buy things off merchant OR specific items
-	//require specific rare honeycombs
-	public int Food=500, Water=500, Honey=900; //REAL VALUES ARE: 250, 250, 0
+	public int Food=500, Water=500, Honey=900; //REAL VALUES ARE: 250, 250, 0 maybe?
 	public string Name = "Character";
-	public int movement = 1;
-	public int movementRemaining = 1;
 
 
 	public delegate void CharacterMovedDelegate (Hex oldHex, Hex newHex);
 	public CharacterMovedDelegate OnCharacterMoved; private UniquesBackpack backpack;
 
+	public int storyProgress=0;
 	/*
 	//HAVE A VARIABLE THAT INCREASES YEILD CHANCE FROM TILES???
 	public int hitPoints = 100;
@@ -26,6 +23,8 @@ public class Character {
 	*/
 	public Hex currentHex{get; protected set;}
 	public Hex nextHex;
+
+	public static bool storyTriggered = false;
 	
 	//store the move for the character and then do the things in here
 	public void doTurn(int turnNum){
@@ -37,6 +36,7 @@ public class Character {
 		}
 		if(backpack==null){
 			backpack = GameObject.Find("Canvas").GetComponentInChildren<UniquesBackpack>();
+			storyProgress=0;
 		}
 		//set all the variables and stuff when the click happens, then call all the actual moving and updating of stuff here!
 		//TODO: make it more clear when the player has selected a tile
@@ -51,11 +51,65 @@ public class Character {
 		if(backpack.itemTruth["book"]){ //generally increases chance of event occuring if player has book
 			rand-=0.7f;
 		}
+		
+		highlightStory(storyProgress);
 
 		if((turnNum%7!=4)){
-			//if(turnNum%8==0){ //Hardcodes a bee event every x number of days to ensure progression
-				//ScenarioManager.ChooseEvent(nextHex, (int)Random.Range(3,8.99f));
-			if(rand<4.5f){
+			
+			//HERE: hard code a check for if the nextHex is a story location
+			if(currentHex.hexMap.storyLocations.Contains(nextHex)){ //roundabout way of doing it but we get what we want
+				if(currentHex.hexMap.storyLocations.IndexOf(nextHex)==storyProgress){ //checks if the next is the one we have progressed up to
+					//THIS WORKS: AS IN - the recognition triggers
+					//ONCOMPLETION: add 1 to story progress from within scenario manager and unset storyTrigger
+					if(storyProgress==0){
+						ScenarioManager.ChooseEvent(nextHex, 1000); //TRIGGERS AGAIN
+						storyTriggered=true;
+					}else if(storyProgress==1){
+						ScenarioManager.ChooseEvent(nextHex, 2000);
+						storyTriggered=true;
+					}else if(storyProgress==2){
+						ScenarioManager.ChooseEvent(nextHex, 3000);
+						storyTriggered=true;
+					}else if(storyProgress==3){
+						ScenarioManager.ChooseEvent(nextHex, 4000);
+						storyTriggered=true;
+					}else if(storyProgress==4){
+						ScenarioManager.ChooseEvent(nextHex, 5000);
+						storyTriggered=true;
+					}//else game should be over 
+
+				}else{
+					int currentLoc = currentHex.hexMap.storyLocations.IndexOf(nextHex);
+					if(currentLoc==0){ //can only be after
+						ScenarioManager.ChooseEvent(nextHex,1002,true); //___1 is before, ___2 is after
+					}else if(currentLoc==1){
+						if(currentLoc>storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,2001,true); //have no completed the event before this one
+						}else if(currentLoc<storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,2002,true); //have completed this story event
+						}
+					}else if(currentLoc==2){
+						if(currentLoc>storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,3001,true);
+						}else if(currentLoc<storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,3002,true);
+						}
+					}else if(currentLoc==3){
+						if(currentLoc>storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,4001,true);
+						}else if(currentLoc<storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,4002,true);
+						}
+					}else if(currentLoc==4){
+						if(currentLoc>storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,5001,true);
+						}else if(currentLoc<storyProgress){
+							ScenarioManager.ChooseEvent(nextHex,5002,true);
+						}
+					}
+					//TODO: add events here so it doesnt trigger agin if already visited
+				}
+			}else if(rand<4.5f){
 				//happens a turn late but at least it happens
 				ScenarioManager.ChooseEvent(nextHex);
 			}
@@ -66,6 +120,29 @@ public class Character {
 		SetHex(nextHex);
 		unHighlightTile(nextHex.hexMap.hexToGameObjectMap[nextHex]);
 
+	}
+
+	public void highlightStory(int highlight, int unhighlight=999){
+		if(unhighlight!=999){
+			unhighlightCurrentObjective(unhighlight);
+		}
+		highlightCurrentObjective(highlight);
+	}
+
+	private Color storyHighlightColour=Color.green, storyPreColor=Color.red;
+	public void highlightCurrentObjective(int progress){
+		if(progress>4){
+			return;
+		}
+		Hex toHighlight = currentHex.hexMap.storyLocations[progress];
+		GameObject obj = currentHex.hexMap.hexToGameObjectMap[toHighlight];
+		obj.GetComponentInChildren<MeshRenderer>().material.color = storyPreColor;
+	}
+
+	public void unhighlightCurrentObjective(int progress){
+		Hex toHighlight = currentHex.hexMap.storyLocations[progress];
+		GameObject obj = currentHex.hexMap.hexToGameObjectMap[toHighlight];
+		obj.GetComponentInChildren<MeshRenderer>().material.color = storyHighlightColour;
 	}
 
 	public void UpdateDayResources(){
@@ -95,17 +172,18 @@ public class Character {
 
 		//in each of these create a new alert if tile violates one of their rules
 		if(!checkIllegalTiles(destinationTile)){
-			AlertSection.NewAlert("Illegal Tile!","default",tile);
+			//AlertSection.NewAlert("Illegal Tile!","default",tile);
 			return;
 		}
 
 		if(!checkTileInNeighbours(destinationTile, map)){
-			AlertSection.NewAlert("Tile not in neighbours!","default",map.hexToGameObjectMap[destinationTile]);
+			//AlertSection.NewAlert("Tile not in neighbours!","default",map.hexToGameObjectMap[destinationTile]);
 			return;
 		}
 
 		if(!checkResourcesSufficient(destinationTile)){
-			AlertSection.NewAlert("Resources insufficient for travel!","default",map.hexToGameObjectMap[destinationTile]);
+			//AlertSection.NewAlert("Resources insufficient for travel!","default",map.hexToGameObjectMap[destinationTile]);
+			//These alerta are broken so we dont want them to trigger... maybe instead throw a sound or smn?
 			return;
 		}
 

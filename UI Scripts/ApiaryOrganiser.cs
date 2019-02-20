@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Reflection;
 using UnityEngine.EventSystems;
+using System;
+
+[Serializable]
 
 public class ApiaryOrganiser : MonoBehaviour {
 
@@ -15,6 +18,7 @@ public class ApiaryOrganiser : MonoBehaviour {
 	private int breedTimer;
 	private Breeding breed;
 	private Text breedText; private Text apiaryDoneText;
+	public Dictionary<string, bool> beeTruth;
 
 	private readonly float xScale = 0.33f,yScale=0.55f;
 
@@ -136,6 +140,11 @@ public class ApiaryOrganiser : MonoBehaviour {
 		if(beeOne!=null && beeTwo !=null){
 			breedTimer = breed.startBreeding(beeOne,beeTwo);
 		}
+
+		if(breedTimer==-100){ //for if the bees cant breed... return a mystery ???
+			breedText.text="???";
+			return;
+		}
 		breedTimerText(0);
 		
 		//so bees cannot be removed from apiary mid breeding
@@ -147,32 +156,23 @@ public class ApiaryOrganiser : MonoBehaviour {
 		//now remove graphic and unenable them again
 		//add to quantity of bee with same texture
 		if(clicked=="one"){
-			if(beeResultOne.GetComponentInChildren<Bee>().quantity<0){
-				beeResultOne.GetComponentInChildren<Bee>().quantity=1;
-			}else{
-				beeResultOne.GetComponentInChildren<Bee>().quantity+=1;
-			}
-			DisplayBee(beeResultOne, beeResultOne.GetComponentInChildren<Bee>());
+			Bee comp = beeResultOne.GetComponentInChildren<Bee>();
+			Texture text = beeResultOne.GetComponentInChildren<RawImage>().texture;
+			addToBeeQuantity(text,1);
 			resultOne.enabled=false;
 			resultOneButton.enabled=false;
 			//HERE TURN OFF BUTTON
 			//TODO: for infinibee bug - maybe enabled is not enough, might have to unset onclick listener
 		}else if(clicked=="two"){
-			if(beeResultTwo.GetComponentInChildren<Bee>().quantity<0){
-				beeResultTwo.GetComponentInChildren<Bee>().quantity=1;
-			}else{
-				beeResultTwo.GetComponentInChildren<Bee>().quantity+=1;
-			}
-			DisplayBee(beeResultTwo, beeResultTwo.GetComponentInChildren<Bee>());
+			Bee comp = beeResultTwo.GetComponentInChildren<Bee>();
+			Texture text = beeResultTwo.GetComponentInChildren<RawImage>().texture;
+			addToBeeQuantity(text,1);
 			resultTwo.enabled=false;
 			resultTwoButton.enabled=false;
 		}else if(clicked=="three"){
-			if(beeResultThree.GetComponentInChildren<Bee>().quantity<0){
-				beeResultThree.GetComponentInChildren<Bee>().quantity=1;
-			}else{
-				beeResultThree.GetComponentInChildren<Bee>().quantity+=1;
-			}
-			DisplayBee(beeResultThree, beeResultThree.GetComponentInChildren<Bee>());
+			Bee comp = beeResultThree.GetComponentInChildren<Bee>();
+			Texture text = beeResultThree.GetComponentInChildren<RawImage>().texture;
+			addToBeeQuantity(text,1);
 			resultThree.enabled=false;
 			resultThreeButton.enabled=false;
 		}
@@ -206,6 +206,8 @@ public class ApiaryOrganiser : MonoBehaviour {
 		toolTip = gm[gm.Length-1].gameObject;
 
 		apiaryDoneText = GameObject.Find("Canvas").GetComponentInChildren<Button>().GetComponentInChildren<Text>();
+
+		beeTruth = new Dictionary<string, bool>();
 	}
 	public void initBees(){
 		foreach(GameObject bee in bees) { 
@@ -217,11 +219,17 @@ public class ApiaryOrganiser : MonoBehaviour {
 			string name = bee.GetComponentInChildren<RawImage>().texture.name;
 			if(name=="bland"){
 				component.quantity=5;
+				beeTruth.Add("bland",true);
 			}else if(name=="common"){
 				component.quantity=2;
+				beeTruth.Add("common",true);
 			}else{
 				component.quantity=-1; //default value for bees that have not been found yet
+				beeTruth.Add(name,false);
 			}
+			//component.quantity=5;
+			//beeTruth.Add(name,true);
+
 			component.initText();
 			component.type=name;
 			bee.name = name;
@@ -232,6 +240,18 @@ public class ApiaryOrganiser : MonoBehaviour {
 				DisplayBee(bee, component);
 			}else{
 				bee.SetActive(false);
+			}
+		}
+	}
+
+	public void reInitBeeDict(){
+		beeTruth.Clear();
+		foreach(GameObject bee in bees){
+			Bee component = bee.GetComponentInChildren<Bee>();
+			if(component.quantity>0){ //IS TRUE IF QUANTITY IS > 0
+				beeTruth.Add(component.name,true);
+			}else{
+				beeTruth.Add(component.name,false);
 			}
 		}
 	}
@@ -268,7 +288,7 @@ public class ApiaryOrganiser : MonoBehaviour {
 			}
 
 			//remove one from quantity and update the text
-			currentBee.quantity -= 1; //just hardcoded here. Could use function below
+			addToBeeQuantity(obj.GetComponentInChildren<RawImage>().texture, -1);
 			obj.GetComponentInChildren<Text>().text = currentBee.quantity.ToString(); //can probably use DisplayBee() here but its not super important
 
 		}else{
@@ -309,9 +329,15 @@ public class ApiaryOrganiser : MonoBehaviour {
 			if(bee.GetComponentInChildren<RawImage>().texture==texture){
 				Bee comp = bee.GetComponentInChildren<Bee>();
 				int temp = comp.quantity;
-				if((temp+=amount)<0){
+				if(texture.name=="diligentWorker"||texture.name=="exoticWorker"){ //infinity exceptionss
+					comp.quantity=1;
+				}else if((temp+=amount)<0){ //if the amount will be less than 0
 					comp.quantity=0;
-				}else{
+				}else if(comp.quantity==-1&&amount>1){ //for if >1 bees are added the first time a bee is discovered
+					comp.quantity+=(amount+1);
+				}else if(comp.quantity==-1){ //if 1 is added the first time a bee is discovered
+					comp.quantity=1;
+				}else{ //otherwise just regularly add
 					comp.quantity += amount;
 				}
 				DisplayBee(bee, comp);

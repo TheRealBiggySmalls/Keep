@@ -10,15 +10,15 @@ public class Breeding : MonoBehaviour {
 	private Bee bees;
 	private Dictionary<string, Recipe> beeRecipes;
 	private UniquesBackpack backpack;
-
 	public string[] beeResults;
 	public int honeyNumberResult;
-
+	private List<string> illegalBees;
 
 	void Start(){
 		beeRecipes = new Dictionary<string, Recipe>();
 		//add all recipes
 		addAllRecipesGross();
+		addToMantleList();
 
 		backpack = GameObject.Find("Canvas").GetComponentInChildren<UniquesBackpack>();
 	}
@@ -34,14 +34,27 @@ public class Breeding : MonoBehaviour {
 		string key = beeO + "_" + beeT;
 		List<string> keys = new List<string>(beeRecipes.Keys);
 		//it stopped initialising here due to the duplicate key: FIXED
-		Recipe temp = beeRecipes[key];
+		Recipe temp;
 
-		if(temp!=null){
+		if(beeRecipes.TryGetValue(key, out temp)){
+			temp=beeRecipes[key];
 			beeResults = breed(temp);
 			honeyNumberResult = honeyResult(temp);
-		}
 
-		return temp.turns;
+			//have to put condition in here: IF it is a valid recipe then check for game ending event, then check for null magic mantle
+			if(key=="diligentWorker_exoticWorker"||key=="exoticWorker_diligentWorker"){
+				ScenarioManager.CreateEndGameEvent();
+
+			}else if(illegalBees.Contains(beeO)||illegalBees.Contains(beeT)){ //one or both of these is an illegal bee
+				if(!backpack.itemTruth["cloak"]){
+					ScenarioManager.CreateDisasterousEvent();
+				}
+			}
+
+			return temp.turns;
+		}else{
+			return -100;
+		}
 	}
 
 	public string[] breed(Recipe recipe){
@@ -79,6 +92,23 @@ public class Breeding : MonoBehaviour {
 		return result;
 	}
 
+	public void addToMantleList(){ //adds all bee names to a list that require null magic mantle so a disasterous event doesn't occur
+		illegalBees = new List<string>();
+
+		illegalBees.Add("exotic"); //exotic
+		illegalBees.Add("diligent"); //diligent
+		illegalBees.Add("intelligent"); //intelligent
+		illegalBees.Add("mutant"); //toxic?
+		illegalBees.Add("exoticShore"); //void
+		illegalBees.Add("diligentWarrior"); //killer
+		illegalBees.Add("intelligentCommon"); //genius
+		illegalBees.Add("mutantToxic"); //stank
+		illegalBees.Add("intelligentNice"); //horny
+		illegalBees.Add("mutantMagic"); //eldritch
+		illegalBees.Add("diligentWorker"); //black hole
+		illegalBees.Add("exoticWorker"); //infinibee
+	}
+
 	public void addAllRecipesGross(){
 		Recipe recipe;
 		
@@ -89,13 +119,13 @@ public class Breeding : MonoBehaviour {
 
 
 		//<---BLAND---> 
-		recipe = new Recipe("bland", "common", 50, "common", "plains", 14,2); //one in four chance for the unnatural tree
+		recipe = new Recipe("bland", "common", 70, "common", "plains", 14,2); //one in four chance for the unnatural tree
 		beeRecipes.Add("bland_common", recipe);
 
 		recipe = new Recipe("bland", "bland", 70, "common", "common", 13,2);
 		beeRecipes.Add("bland_bland", recipe);
 
-		recipe = new Recipe("bland", "plains", 49, "common", "plains", 14,3);
+		recipe = new Recipe("bland", "plains", 65, "common", "plains", 14,3);
 		beeRecipes.Add("bland_plains", recipe);
 
 		recipe = new Recipe("bland", "forest", 55, "forest", "common", 14,3);
@@ -129,13 +159,13 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("bland_toxic", recipe);
 
 		//<---COMMON---> breeds into worker
-		recipe = new Recipe("common", "common", 66, "common", "worker", 15,2); //one in three for the natural tree
+		recipe = new Recipe("common", "common", 72, "common", "worker", 15,2); //one in three for the natural tree
 		beeRecipes.Add("common_common", recipe);
 
-		recipe = new Recipe("common", "bland", 50, "common", "plains", 16,2);
+		recipe = new Recipe("common", "bland", 70, "common", "plains", 16,2);
 		beeRecipes.Add("common_bland", recipe);
 
-		recipe = new Recipe("common", "plains", 50, "plains", "plains", 16,4);
+		recipe = new Recipe("common", "plains", 60, "plains", "plains", 16,4);
 		beeRecipes.Add("common_plains", recipe);
 
 		recipe = new Recipe("common", "forest", 60, "forest", "forest", 18,3);
@@ -169,13 +199,13 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("common_toxic", recipe);
 
 		//<---WORKER---> breeds into warrior and intelligent
-		recipe = new Recipe("worker", "forest", 58, "forest", "warrior", 23,3);
+		recipe = new Recipe("worker", "forest", 65, "forest", "warrior", 23,3);
 		beeRecipes.Add("worker_forest", recipe);
 
-		recipe = new Recipe("worker", "ocean", 33, "ocean", "intelligent", 48,5);
+		recipe = new Recipe("worker", "ocean", 40, "ocean", "intelligent", 48,5);
 		beeRecipes.Add("worker_ocean", recipe);
 
-		recipe = new Recipe("worker", "warrior", 30, "warrior", "diligent", 41,5);
+		recipe = new Recipe("worker", "warrior", 40, "warrior", "diligent", 41,5);
 		beeRecipes.Add("worker_warrior", recipe);
 
 		recipe = new Recipe("worker", "bland", 70, "common", "bland", 19,3); 
@@ -193,7 +223,7 @@ public class Breeding : MonoBehaviour {
 		recipe = new Recipe("worker", "stone", 60, "common", "stone", 20,5); 
 		beeRecipes.Add("worker_stone", recipe);
 
-		recipe = new Recipe("worker", "worker", 20, "worker", "common", 26,4);
+		recipe = new Recipe("worker", "worker", 15, "worker", "common", 26,4);
 		beeRecipes.Add("worker_worker", recipe);
 
 		recipe = new Recipe("worker", "shore", 90, "common", "shore", 22,3);
@@ -209,10 +239,10 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("worker_toxic", recipe);
 
 		//<---FOREST---> breeds into ocean
-		recipe = new Recipe("forest", "shore", 44, "shore", "ocean", 34,4);
+		recipe = new Recipe("forest", "shore", 55, "shore", "ocean", 34,4);
 		beeRecipes.Add("forest_shore", recipe);
 
-		recipe = new Recipe("forest", "worker", 59, "worker", "warrior", 24,3);
+		recipe = new Recipe("forest", "worker", 68, "worker", "warrior", 24,3);
 		beeRecipes.Add("forest_worker", recipe);
 
 		recipe = new Recipe("forest", "bland", 60, "common", "bland", 15,3); 
@@ -249,7 +279,7 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("forest_toxic", recipe);
 		
 		//<---SHORE---> breeds into ocean 
-		recipe = new Recipe("shore", "forest", 44, "shore", "ocean", 33,3);
+		recipe = new Recipe("shore", "forest", 58, "shore", "ocean", 33,3);
 		beeRecipes.Add("shore_forest", recipe);
 
 		recipe = new Recipe("shore", "bland", 50, "common", "bland", 17,3);
@@ -289,7 +319,7 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("shore_toxic", recipe);
 
 		//<---OCEAN---> breeds into intelligent 
-		recipe = new Recipe("ocean", "worker", 33, "ocean", "intelligent", 45,5);
+		recipe = new Recipe("ocean", "worker", 40, "ocean", "intelligent", 45,5);
 		beeRecipes.Add("ocean_worker", recipe);
 
 		recipe = new Recipe("ocean", "bland", 75, "bland", "shore", 19,3); 
@@ -329,7 +359,7 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("ocean_toxic", recipe);
 
 		//<---WARRIOR---> breeds into diligent
-		recipe = new Recipe("warrior", "worker", 30, "worker", "diligent", 47,5);
+		recipe = new Recipe("warrior", "worker", 40, "worker", "diligent", 47,5);
 		beeRecipes.Add("warrior_worker", recipe);
 
 		recipe = new Recipe("warrior", "bland", 50, "worker", "bland", 14,3); 
@@ -371,7 +401,7 @@ public class Breeding : MonoBehaviour {
 		//<<<<----------UNNATURAL TREE----------->>>>
 
 		//<---PLAINS---> breeds into nice
-		recipe = new Recipe("plains", "icy", 50, "icy", "nice", 25,4);
+		recipe = new Recipe("plains", "icy", 70, "icy", "nice", 25,4);
 		beeRecipes.Add("plains_icy", recipe);
 
 		recipe = new Recipe("plains", "bland", 90, "common", "bland", 11,2);
@@ -411,7 +441,7 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("plains_toxic", recipe);
 
 		//<<---ICY---> breeds into nice
-		recipe = new Recipe("icy", "plains", 50, "plains", "nice", 24,4);
+		recipe = new Recipe("icy", "plains", 70, "plains", "nice", 24,4);
 		beeRecipes.Add("icy_plains", recipe);
 
 		recipe = new Recipe("icy", "bland", 80, "common", "bland", 12,3);
@@ -451,10 +481,10 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("icy_magic", recipe);
 
 		//<<---NICE---> breeds into mutant(toxic) and magic
-		recipe = new Recipe("nice", "stone", 35, "stone", "toxic", 28,5);
+		recipe = new Recipe("nice", "stone", 50, "stone", "toxic", 28,5);
 		beeRecipes.Add("nice_stone", recipe);
 
-		recipe = new Recipe("nice", "toxic", 5, "magic", "magic", 28,5);
+		recipe = new Recipe("nice", "toxic", 30, "magic", "magic", 28,5);
 		beeRecipes.Add("nice_toxic", recipe);
 
 		recipe = new Recipe("nice", "bland", 90, "icy", "plain", 14,3);
@@ -491,10 +521,10 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("nice_magic", recipe);
 
 		//<<---STONE---> breeds into mutant(toxic) and toxic(mutant)
-		recipe = new Recipe("stone", "nice", 40, "nice", "toxic", 28,5);
+		recipe = new Recipe("stone", "nice", 50, "nice", "toxic", 28,5);
 		beeRecipes.Add("stone_nice", recipe);
 
-		recipe = new Recipe("stone", "toxic", 25, "toxic", "mutant", 31,6); //MIGHT BE WRONG TOXIC/MUTANT
+		recipe = new Recipe("stone", "toxic", 30, "toxic", "mutant", 31,6); //MIGHT BE WRONG TOXIC/MUTANT
 		beeRecipes.Add("stone_toxic", recipe);
 
 		recipe = new Recipe("stone", "bland", 80, "common", "bland", 12,3);
@@ -531,16 +561,16 @@ public class Breeding : MonoBehaviour {
 		beeRecipes.Add("stone_magic", recipe);
 
 		//<<---MUTANT---> breeds into magic, strange (exotic) and mutant(toxic)
-		recipe = new Recipe("toxic", "nice", 6, "magic", "magic", 28,5);
+		recipe = new Recipe("toxic", "nice", 30, "magic", "magic", 28,5);
 		beeRecipes.Add("toxic_nice", recipe);
 
-		recipe = new Recipe("toxic", "magic", 5, "magic", "exotic", 38,6);
+		recipe = new Recipe("toxic", "magic", 30, "magic", "exotic", 38,6);
 		beeRecipes.Add("toxic_magic", recipe);
 
-		recipe = new Recipe("toxic", "stone", 25, "stone", "mutant", 30,6); //MIGHT BE WRONG TOXIC/MUTANT
+		recipe = new Recipe("toxic", "stone", 36, "stone", "mutant", 30,6); //MIGHT BE WRONG TOXIC/MUTANT
 		beeRecipes.Add("toxic_stone", recipe);
 
-		recipe = new Recipe("toxic", "bland", 30, "stone", "mutant", 20,4);
+		recipe = new Recipe("toxic", "bland", 40, "stone", "mutant", 20,4);
 		beeRecipes.Add("toxic_bland", recipe);
 
 		recipe = new Recipe("toxic", "common", 55, "nice", "common", 29,3);
@@ -567,17 +597,17 @@ public class Breeding : MonoBehaviour {
 		recipe = new Recipe("toxic", "ocean", 80, "bland", "bland", 23,5);
 		beeRecipes.Add("toxic_ocean", recipe);
 
-		recipe = new Recipe("toxic", "toxic", 30, "toxic", "mutant", 28,5);
+		recipe = new Recipe("toxic", "toxic", 44, "toxic", "mutant", 28,5);
 		beeRecipes.Add("toxic_toxic", recipe);
 
 		//<<---MAGIC---> breeds into mutant(toxic) and toxic(mutant)
-		recipe = new Recipe("magic", "toxic", 5, "toxic", "exotic", 42,6);
+		recipe = new Recipe("magic", "toxic", 30, "toxic", "exotic", 42,6);
 		beeRecipes.Add("magic_toxic", recipe);
 
-		recipe = new Recipe("magic", "magic", 4, "exotic", "exotic", 50,6);
+		recipe = new Recipe("magic", "magic", 20, "exotic", "exotic", 50,6);
 		beeRecipes.Add("magic_magic", recipe);
 
-		recipe = new Recipe("magic", "bland", 12, "toxic", "exotic", 22,5); 
+		recipe = new Recipe("magic", "bland", 32, "toxic", "exotic", 22,5); 
 		beeRecipes.Add("magic_bland", recipe);
 
 		recipe = new Recipe("magic", "common", 55, "nice", "common", 45,4);
@@ -617,6 +647,7 @@ public class Breeding : MonoBehaviour {
 		//intelligentCommon (Genius) , intelligentNice (horny bee - create new texture)
 		//exoticShore, exoticWorker (The Infinibee)
 		//mutantMagic, mutantToxic
+		//Tonbee HawK?
 		//BREEDING: infinibee with black hole will end the game -> give dimensional rip
 
 		//4 devestating events can occur if bees are bred without protection: other bees start dying - shop keeper is killed - food and water become 0
@@ -638,6 +669,24 @@ public class Breeding : MonoBehaviour {
 		recipe = new Recipe("intelligent", "mutant", 35, "intelligentCommon", "mutantToxic", 40,4); //genius, stank
 		beeRecipes.Add("intelligent_mutant", recipe);
 
+		recipe = new Recipe("intelligent", "intelligentCommon", 100, "intelligentCommon", "intelligentCommon", 71,3);
+		beeRecipes.Add("intelligent_intelligentCommon", recipe);
+
+		recipe = new Recipe("intelligent", "mutantToxic", 70, "intelligentNice", "mutant", 46,4);
+		beeRecipes.Add("intelligent_mutantToxic", recipe);
+
+		recipe = new Recipe("intelligent", "diligentWarrior", 70, "intelligentNice", "diligent", 62,4);
+		beeRecipes.Add("intelligent_diligentWarrior", recipe);
+
+		recipe = new Recipe("intelligent", "exoticShore", 70, "intelligentNice", "exotic", 75,4); 
+		beeRecipes.Add("intelligent_exoticShore", recipe);
+
+		recipe = new Recipe("intelligent", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligent_intelligentNice", recipe);
+
+		recipe = new Recipe("intelligent", "mutantMagic", 40, "intelligentNice", "intelligentCommon", 53, 5);
+		beeRecipes.Add("intelligent_mutantMagic", recipe);
+
 		//<<---DILIGENT--->
 		recipe = new Recipe("diligent", "diligent", 100, "diligent", "diligent", 60,3);
 		beeRecipes.Add("diligent_diligent", recipe);
@@ -650,6 +699,24 @@ public class Breeding : MonoBehaviour {
 
 		recipe = new Recipe("diligent", "mutant", 35, "diligentWarrior", "mutantToxic", 42,4); //killer, stank
 		beeRecipes.Add("diligent_mutant", recipe);
+
+		recipe = new Recipe("diligent", "diligentWarrior", 100, "diligentWarrior", "diligentWarrior", 53,3);
+		beeRecipes.Add("diligent_diligentWarrior", recipe);
+
+		recipe = new Recipe("diligent", "intelligentCommon", 70, "intelligentNice", "intelligent", 62,4);
+		beeRecipes.Add("diligent_intelligentCommon", recipe);
+
+		recipe = new Recipe("diligent", "mutantToxic", 70, "intelligentNice", "mutant", 42,4);
+		beeRecipes.Add("diligent_mutantToxic", recipe);
+
+		recipe = new Recipe("diligent", "exoticShore", 70, "intelligentNice", "exotic", 73,4);
+		beeRecipes.Add("diligent_exoticShore", recipe);
+
+		recipe = new Recipe("diligent", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("diligent_intelligentNice", recipe);
+
+		recipe = new Recipe("diligent", "mutantMagic", 40, "mutantMagic", "exoticShore", 51, 5);
+		beeRecipes.Add("diligent_mutantMagic", recipe);
 
 		//<<---EXOTIC--->
 		recipe = new Recipe("exotic", "exotic", 100, "exotic", "exotic", 50,3);
@@ -664,6 +731,24 @@ public class Breeding : MonoBehaviour {
 		recipe = new Recipe("exotic", "mutant", 35, "mutantToxic", "exoticShore", 69,4); //stank, void
 		beeRecipes.Add("exotic_mutant", recipe);
 
+		recipe = new Recipe("exotic", "exoticShore", 100, "exoticShore", "exoticShore", 72,3);
+		beeRecipes.Add("exotic_exoticShore", recipe);
+
+		recipe = new Recipe("exotic", "intelligentCommon", 70, "intelligentNice", "intelligent", 78,4); //eldritch, horny
+		beeRecipes.Add("exotic_intelligentCommon", recipe);
+
+		recipe = new Recipe("exotic", "mutantToxic", 70, "intelligentNice", "mutant", 78,4); //eldritch, horny
+		beeRecipes.Add("exotic_mutantToxic", recipe);
+
+		recipe = new Recipe("exotic", "diligentWarrior", 70, "intelligentNice", "diligent", 78,4);//horny, eldritch
+		beeRecipes.Add("exotic_diligentWarrior", recipe);
+
+		recipe = new Recipe("exotic", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("exotic_intelligentNice", recipe);
+
+		recipe = new Recipe("exotic", "mutantMagic", 70, "exoticShore", "mutantToxic", 48, 5);
+		beeRecipes.Add("exotic_mutantMagic", recipe);
+
 		//<<---MUTANT--->
 		recipe = new Recipe("mutant", "mutant", 100, "mutant", "mutant", 50,3);
 		beeRecipes.Add("mutant_mutant", recipe);
@@ -676,6 +761,24 @@ public class Breeding : MonoBehaviour {
 
 		recipe = new Recipe("mutant", "exotic", 35, "mutantToxic", "exoticShore", 68,3); //stank, void
 		beeRecipes.Add("mutant_exotic", recipe);
+		//t2
+		recipe = new Recipe("mutant", "mutantToxic", 100, "mutantToxic", "mutantToxic", 18,3);
+		beeRecipes.Add("mutant_mutantToxic", recipe);
+
+		recipe = new Recipe("mutant", "intelligentCommon", 70, "intelligentNice", "intelligent", 41,4);
+		beeRecipes.Add("mutant_intelligentCommon", recipe);
+
+		recipe = new Recipe("mutant", "diligentWarrior", 70, "intelligentNice", "diligent", 42,4);
+		beeRecipes.Add("mutant_diligentWarrior", recipe);
+
+		recipe = new Recipe("mutant", "exoticShore", 70, "intelligentNice", "exotic", 52,4);
+		beeRecipes.Add("mutant_exoticShore", recipe);
+		//t3
+		recipe = new Recipe("mutant", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("mutant_intelligentNice", recipe);
+
+		recipe = new Recipe("mutant", "mutantMagic", 70, "mutantMagic", "mutantMagic", 48, 4);
+		beeRecipes.Add("mutant_mutantMagic", recipe);
 
 		//<<---INTELLIGENT COMMON---> (Genius)
 		recipe = new Recipe("intelligentCommon", "intelligentCommon", 100, "intelligentCommon", "intelligentCommon", 75,3);
@@ -702,6 +805,12 @@ public class Breeding : MonoBehaviour {
 		recipe = new Recipe("intelligentCommon", "intelligent", 200, "intelligentNice", "intelligentNice", 72,4);
 		beeRecipes.Add("intelligentCommon_intelligent", recipe);
 
+		recipe = new Recipe("intelligentCommon", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentCommon_intelligentNice", recipe);
+
+		recipe = new Recipe("intelligentCommon", "mutantMagic", 20, "exoticWorker", "mutantMagic", 48, 5);
+		beeRecipes.Add("intelligentCommon_mutantMagic", recipe);
+
 		//<<---DILIGENT WARRIOR---> (Killer)
 		recipe = new Recipe("diligentWarrior", "diligentWarrior", 100, "diligentWarrior", "diligentWarrior", 55,3);
 		beeRecipes.Add("diligentWarrior_diligentWarrior", recipe);
@@ -726,6 +835,12 @@ public class Breeding : MonoBehaviour {
 
 		recipe = new Recipe("diligentWarrior", "intelligent", 35, "intelligent", "intelligentCommon", 68,4);
 		beeRecipes.Add("diligentWarrior_intelligent", recipe);
+
+		recipe = new Recipe("diligentWarrior", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("diligentWarrior_intelligentNice", recipe);
+
+		recipe = new Recipe("diligentWarrior", "mutantMagic", 15, "diligentWorker", "mutantMagic", 45, 5);
+		beeRecipes.Add("diligentWarrior_mutantMagic", recipe);
 
 		//<<---EXOTIC SHORE---> (Void)
 		recipe = new Recipe("exoticShore", "exoticShore", 20, "exoticShore", "exoticShore", 80,3);
@@ -752,6 +867,12 @@ public class Breeding : MonoBehaviour {
 		recipe = new Recipe("exoticShore", "diligent", 35, "diligent", "diligentWarrior", 78,4);
 		beeRecipes.Add("exoticShore_diligent", recipe);
 
+		recipe = new Recipe("exoticShore", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("exoticShore_intelligentNice", recipe);
+
+		recipe = new Recipe("exoticShore", "mutantMagic", 15, "diligentWorker", "mutantMagic", 43, 5);
+		beeRecipes.Add("exoticShore_mutantMagic", recipe);
+
 		//<<---DILIGENT WARRIOR---> (Stank)
 		recipe = new Recipe("mutantToxic", "mutantToxic", 100, "mutantToxic", "mutantToxic", 20,3);
 		beeRecipes.Add("mutantToxic_mutantToxic", recipe);
@@ -776,6 +897,84 @@ public class Breeding : MonoBehaviour {
 
 		recipe = new Recipe("mutantToxic", "intelligent", 35, "intelligent", "intelligentCommon", 41,4);
 		beeRecipes.Add("mutantToxic_intelligent", recipe);
+
+		recipe = new Recipe("mutantToxic", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("mutantToxic_intelligentNice", recipe);
+
+		recipe = new Recipe("mutantToxic", "mutantMagic", 70, "mutantMagic", "exoticShore", 45, 5);
+		beeRecipes.Add("mutantToxic_mutantMagic", recipe);
+
+		//<<---INTELLIGENT NICE---> (Horny Bee)
+		recipe = new Recipe("intelligentNice", "intelligentNice", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_intelligentNice", recipe);
+
+		recipe = new Recipe("intelligentNice", "diligent", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_diligent", recipe);
+
+		recipe = new Recipe("intelligentNice", "intelligent", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_intelligent", recipe);
+
+		recipe = new Recipe("intelligentNice", "exotic", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_exotic", recipe);
+
+		recipe = new Recipe("intelligentNice", "mutant", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_mutant", recipe);
+
+		recipe = new Recipe("intelligentNice", "intelligentCommon", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_intelligentCommon", recipe);
+
+		recipe = new Recipe("intelligentNice", "diligentWarrior", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_diligentWarrior", recipe);
+
+		recipe = new Recipe("intelligentNice", "exoticShore", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_exoticShore", recipe);
+
+		recipe = new Recipe("intelligentNice", "mutantToxic", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_mutantToxic", recipe);
+
+		recipe = new Recipe("intelligentNice", "mutantMagic", 200, "intelligentNice", "intelligentNice", 40, 3);
+		beeRecipes.Add("intelligentNice_mutantMagic", recipe);
+
+		//<<---MUTANT MAGIC---> (Eldritch)
+		recipe = new Recipe("mutantMagic", "diligent", 65, "diligent", "mutantToxic", 41, 4); //MAYBE: redo these next 4, might not be the best recipe bindings
+		beeRecipes.Add("mutantMagic_diligent", recipe);
+
+		recipe = new Recipe("mutantMagic", "intelligent", 65, "intelligent", "mutantToxic", 40, 4);
+		beeRecipes.Add("mutantMagic_intelligent", recipe);
+
+		recipe = new Recipe("mutantMagic", "exotic", 65, "exotic", "mutantToxic", 42, 4);
+		beeRecipes.Add("mutantMagic_exotic", recipe);
+
+		recipe = new Recipe("mutantMagic", "mutant", 65, "mutantToxic", "mutantToxic", 38, 4);
+		beeRecipes.Add("mutantMagic_mutant", recipe);
+
+		recipe = new Recipe("mutantMagic", "diligentWarrior", 15, "diligentWorker", "diligentWorker", 53, 5); //black hole (void/killer)
+		beeRecipes.Add("mutantMagic_diligentWarrior", recipe);
+
+		recipe = new Recipe("mutantMagic", "intelligentCommon", 20, "exoticWorker", "exoticWorker", 54, 5); //infinibee (genius/eldritch)
+		beeRecipes.Add("mutantMagic_intelligentCommon", recipe);
+
+		recipe = new Recipe("mutantMagic", "exoticShore", 15, "diligentWorker", "diligentWorker", 60, 5); //black hole (void/eldritch)
+		beeRecipes.Add("mutantMagic_exoticShore", recipe);
+
+		recipe = new Recipe("mutantMagic", "mutantToxic", 40, "mutantToxic", "exoticShore", 48, 5);
+		beeRecipes.Add("mutantMagic_mutantToxic", recipe);
+
+		recipe = new Recipe("mutantMagic", "intelligentNice", 200, "intelligentNice", "intelligentNice", 45, 4);
+		beeRecipes.Add("mutantMagic_intelligentNice", recipe);
+
+		recipe = new Recipe("mutantMagic", "mutantMagic", 100, "mutantMagic", "mutantToxic", 50, 5);
+		beeRecipes.Add("mutantMagic_mutantMagic", recipe);
+
+		//DISCLAIMER: At the moment these two only breed with each other, and nothing else (at the moment)
+
+		//<<---DILIGENT WORKER---> (Black Hole)
+		recipe = new Recipe("diligentWorker", "exoticWorker", 1000, "bland", "bland", 10000, 999999999);
+		beeRecipes.Add("diligentWorker_exoticWorker", recipe);
+
+		//<<---EXOTIC WORKER---> (Infinibee)
+		recipe = new Recipe("exoticWorker", "diligentWorker", 1000, "bland", "bland", 10000, 999999999);
+		beeRecipes.Add("exoticWorker_diligentWorker", recipe); 
 		
 	}	
 }

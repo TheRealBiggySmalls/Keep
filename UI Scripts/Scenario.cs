@@ -6,13 +6,21 @@ using UnityEngine.UI;
 public class Scenario : MonoBehaviour {
 
 	public void OptionOne(){
-		Close();
-		ScenarioManager.DisplayResults(1);
+		if(Character.storyTriggered){
+			ScenarioManager.ContinueStory(1);
+		}else{
+			Close();
+			ScenarioManager.DisplayResults(1);
+		}
 	}
 
 	public void OptionTwo(){
-		Close();
-		ScenarioManager.DisplayResults(2);
+		if(Character.storyTriggered){
+			ScenarioManager.ContinueStory(2);
+		}else{
+			Close();
+			ScenarioManager.DisplayResults(2);
+		}
 	}
 
 	public void Close(){

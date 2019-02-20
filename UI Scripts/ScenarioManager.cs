@@ -13,7 +13,7 @@ public class ScenarioManager : MonoBehaviour {
 	public GameObject beeClosePrefab;
 	private static string HeaderText, EventText, OptionOne, OptionTwo, CloseText;
 
-	public GameObject apiary; private UniquesBackpack backpack;
+	public GameObject apiary; private UniquesBackpack backpack; private GameObject currentEvent;
 
 	private static ScenarioManager instance;
 	private List<int> eventsThatHaveOccured;
@@ -33,25 +33,32 @@ public class ScenarioManager : MonoBehaviour {
 		ScenarioId = 999;
 		backpack = GameObject.Find("Canvas").GetComponentInChildren<UniquesBackpack>();
 		eventsThatHaveOccured = new List<int>();
+		boi = GameObject.Find("Map").GetComponentInChildren<Map_Continent>().player;
 	}
 
-	public static void ChooseEvent(Hex hex, int id = 0){
+	public static void ChooseEvent(Hex hex, int id = 0, bool end=false){
+		//if(instance.boi==null){
+		//	instance.boi=hex.hexMap.player;
+		//}
+
 		int rand;
 		if(id==0){
 			//Pick a random event!
 			//change this to 30 later. Just using now so it doesnt break
-			rand = (int) Random.Range(1,10);
+			rand = (int) Random.Range(1,12);
 			Debug.Log(rand);
 		}else{
 			rand = id;
 		}
-
 		instance.yuckyIf(rand, hex);
-		instance.CreateEvent();
+		if(!end){
+			instance.CreateEvent();
+		}
 	}
 
 	public void CreateEvent(){
 		GameObject tileEvent  = (GameObject) Instantiate(instance.preFab);
+		currentEvent = tileEvent;
 		Text[] texts = tileEvent.GetComponentsInChildren<Text>();
 
 		//reinit dict every time
@@ -83,10 +90,27 @@ public class ScenarioManager : MonoBehaviour {
 		tileEvent.transform.position = defaultPos;
 	}
 
+	public void SetStoryTexts(){//sets text again for events
+		Text[] texts = currentEvent.GetComponentsInChildren<Text>();
+		if(texts[0].name=="HeaderText"){
+			texts[0].text = HeaderText;
+			texts[1].text = EventText;
+		}else{
+			texts[0].text = EventText;
+			texts[1].text = HeaderText;
+		}
+
+		Button[] buttons = currentEvent.GetComponentsInChildren<Button>();
+		if(buttons[0].name=="OptionOne"){
+			buttons[0].GetComponentInChildren<Text>().text = OptionOne;
+			buttons[1].GetComponentInChildren<Text>().text = OptionTwo;
+		}else{
+			buttons[0].GetComponentInChildren<Text>().text = OptionTwo;
+			buttons[1].GetComponentInChildren<Text>().text = OptionOne;
+		}
+	}
+
 	public static void DisplayResults(int option){
-		//TODO: fill out the rest of the scenarios
-		//TODO: add in chance to the outcomes for FUN
-		//TODO: add in results that update the users posessions
 		Texture texture = instance.yuckyOutcomeIf(option);
 		//HAVE THIS RETURN NULL if no bee OR a STRING NAME IF BEE
 		if(texture==null){
@@ -155,10 +179,74 @@ public class ScenarioManager : MonoBehaviour {
 			outcome.transform.position = defaultPos;
 
 			//IT ALL WORKS FUCK YEAH
-			instance.apiary.GetComponentInChildren<ApiaryOrganiser>().addToBeeQuantity(texture, beeQuantity+1);
+			instance.apiary.GetComponentInChildren<ApiaryOrganiser>().addToBeeQuantity(texture, beeQuantity);
+		}
+		instance.currentEvent=null;
+	}
+
+	public void EndStoryEvent(Texture texture, bool add=true){ //specifically for story
+
+		Destroy(currentEvent); //closes old event
+		if(texture==null){
+			texture=defaultTexture;
 		}
 
+		//creates the regular outcome for an event if no texture is returned
+		GameObject outcome = (GameObject) Instantiate(instance.beeClosePrefab);
+		Text[] texts = outcome.GetComponentsInChildren<Text>();
+
+		//sets header and event text
+		if(texts[0].name=="HeaderText"){
+			texts[0].text = HeaderText;
+			texts[1].text = EventText;
+		}else{
+			texts[0].text = EventText;
+			texts[1].text = HeaderText;
+		}
+
+		RawImage bee = outcome.GetComponentsInChildren<RawImage>()[1];
+		if(texture.name=="questionMark"){
+			texts[2].enabled=false; //disable text
+		}else if(add){
+			
+			texts[2].text = beeQuantity.ToString();
+			instance.apiary.GetComponentInChildren<ApiaryOrganiser>().addToBeeQuantity(texture, beeQuantity);
+		}else if(!add){
+			texts[2].enabled=false;
+		}
+
+		bee.texture=texture;
+		
+		//sets button text
+		outcome.GetComponentInChildren<Button>().GetComponentInChildren<Text>().text = CloseText;
+
+		outcome.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform);
+		outcome.transform.localScale=Vector3.one;
+
+		defaultPos.y = Screen.height/2;
+		defaultPos.x = Screen.width/2;
+		outcome.transform.position = defaultPos;
+
+		Character.storyTriggered=false; //reset this
 	}
+
+
+	//HERE WE HAVE A CHANGETEXT FUNCTION WHICH DOESNT DELETE OR RECREATE ANYTHING BUT IT DOES CHANGE TEXT
+	//WE HAVE OPTION CHOSEN EACH TIME: WE HAVE SCENARIO ID: CREATE CHAIN OF EVENTS FOR EACH STORY TRIGGER
+	int storyChain;
+	public static void ContinueStory(int option){
+		if(instance.ScenarioId==1000){
+			instance.storyEventOne(option);
+		}else if(instance.ScenarioId==2000){
+			instance.storyEventTwo(option);
+		}else if(instance.ScenarioId==3000){
+			instance.storyEventThree(option);
+		}else if(instance.ScenarioId==4000){
+			instance.storyEventFour(option);
+		}else if(instance.ScenarioId==5000){
+			instance.storyEventFive(option);
+		}
+	}	
 
 
 	private float mountain=0.8f, snow=0.61f,forest=0.2f,grassland=0.16f;
@@ -180,7 +268,7 @@ public class ScenarioManager : MonoBehaviour {
 			}
 			return false;
 		}else if(ele>=grassland&&ele<forest){
-			if(tile=="grasslands"){
+			if(tile=="grassland"){
 				return true;
 			}
 			return false;
@@ -542,7 +630,7 @@ public class ScenarioManager : MonoBehaviour {
 	public void ScenarioNine(){
 		ScenarioId=9;
 		HeaderText = "Studious Work";
-		EventText = "Reading from your book you decide to consult a new passage, what do you choose to study?";
+		EventText = "You open your book and decide to consult a new passage, what do you choose to study?";
 		OptionTwo = "The Lurker";
 		OptionOne = "The Sky Holder";
 	}
@@ -687,9 +775,11 @@ public class ScenarioManager : MonoBehaviour {
 		if(outcome==2){
 			EventText = "Cross breeding is an interesting and crucial part of an bee keepers life. While it has the potential to create new and exciting variations of bees, it also has the potential for undesirable outcomes. Much thought should be put into cross breeding and which bees may have favourable genetic mutations.";
 			CloseText = "Interesting.";
+			Journal.addStringToRumoursPage("Mutations amongst bee species seem very interesting... I should consider the nature and types of bees I have before cross breeding to ensure the greatest mutation chance!", "book");
 		}else if(outcome==1){
 			EventText = "Ensuring the proper precations are taken before cross breeding is essential. Too many tales exist of farmers being melted, vaporized or even having their whole farm reduced to ruins by lack of preparation. Never underestimate nature, and the cost of messing with it.";
 			CloseText = "Interesting.";
+			Journal.addStringToRumoursPage("According to my studies cross-breeding can be quite dangers with more advanced species of bees... I should be careful!", "book");
 		}
 		return null;
 	}
@@ -707,6 +797,7 @@ public class ScenarioManager : MonoBehaviour {
 		if(outcome==2){
 			EventText = "Ensuring the proper precations are taken before cross breeding is essential. Too many tales exist of farmers being melted, vaporized or even having their whole farm reduced to ruins by lack of preparation. Never underestimate nature, and the cost of messing with it.";
 			CloseText = "Interesting.";
+			Journal.addStringToRumoursPage("According to my studies cross-breeding can be quite dangers with more advanced species of bees... I should be careful!", "book");
 		}else if(outcome==1){
 			EventText = "Intelligence is an interesting trait for bees. On one hand it is incredibly desireable as it increases relations between the keeper and his hive, as well as increasing hive output. That being said, a surplus of intelligence can be very dangerous... beware the hive mind.";
 			CloseText = "Interesting.";
@@ -729,6 +820,7 @@ public class ScenarioManager : MonoBehaviour {
 		}else if(outcome==1){
 			EventText = "Bee genetics can be loosely split into two categories: the Industrious/Natural tree and the Shy/Unnatural tree. Both have distinct genetic lines and safe mutations within them, though breeding between the trees is considered taboo and is an area lacking research.";
 			CloseText = "Interesting.";
+			Journal.addStringToRumoursPage("Thanks to my book I have learnt of the different family trees of bees! I should try to cross-breed within these trees for maximum mutation chance.", "book");
 		}
 		return null;
 	}
@@ -745,8 +837,29 @@ public class ScenarioManager : MonoBehaviour {
 		if(outcome==2){
 			EventText = "Bee genetics can be loosely split into two categories: the Industrious/Natural tree and the Shy/Unnatural tree. Both have distinct genetic lines and safe mutations within them, though breeding between the trees is considered taboo and is an area lacking research.";
 			CloseText = "Interesting.";
+			Journal.addStringToRumoursPage("Thanks to my book I have learnt of the different family trees of bees! I should try to cross-breed within these trees for maximum mutation chance.", "book");
 		}else if(outcome==1){
 			EventText = "Cross breeding is an interesting and crucial part of an bee keepers life. While it has the potential to create new and exciting variations of bees, it also has the potential for undesirable outcomes. Much thought should be put into cross breeding and which bees may have favourable genetic mutations.";
+			CloseText = "Interesting.";
+			Journal.addStringToRumoursPage("Mutations amongst bee species seem very interesting... I should consider the nature and types of bees I have before cross breeding to ensure the greatest mutation chance!", "book");
+		}
+		return null;
+	}
+
+	public void ScenarioThirty(){
+		ScenarioId=30;
+		HeaderText = "Studious Work";
+		EventText = "Study time!";
+		OptionTwo = "Bland Bees";
+		OptionOne = "Common Bees";
+	}
+	public Texture ScenarioThirtyOutcome(int outcome){
+
+		if(outcome==2){
+			EventText = "Bland bees are highly unexciting and generally dull creatures. Best bred in submissive (second) the second slot as they are very timid and will not produce much in the way of mutation.";
+			CloseText = "Interesting.";
+		}else if(outcome==1){
+			EventText = "Common bees are much like their bland counterparts, not very prone to mutation and not very dominant. They are known to have interesting results when bred with themselves...";
 			CloseText = "Interesting.";
 		}
 		return null;
@@ -756,9 +869,9 @@ public class ScenarioManager : MonoBehaviour {
 
 	//<<<-------Scenarios 20-30 are for events unique to having items--------->>>
 	public void ScenarioTwenty(){ //PICKAXE IS FOR STONE BEES
-		ScenarioId=6;
+		ScenarioId=20;
 		HeaderText = "A Small Opening";
-		EventText = "You have been following a mountainside for some time and to your right is a large cliff face. You turn a corner and are confronted by an old mine entrance covered in rubble...";
+		EventText = "You have been following a small mountainside for some time and to your right is a large cliff face. You turn a corner and are confronted by an old mine entrance covered in rubble...";
 		OptionTwo = "Try to remove the rocks";
 		if(backpack.itemTruth["pickaxe"]){
 			OptionOne = "Plow through with your pick";
@@ -767,7 +880,6 @@ public class ScenarioManager : MonoBehaviour {
 		}
 	}
 	public Texture ScenarioTwentyOutcome(int outcome){
-		Texture texture=defaultTexture;
 		if(outcome==1&&backpack.itemTruth["pickaxe"]){
 			EventText = "You chip at the rocks and have quickly cleared the rubble with ease. Inside the now open cave you find a small running spring amongst a few skeletons of miners who undoubtedly were trapped and perished in here. Near one of the skeletons you find a satchel of honey! A staple snack for hardworking miners. I'm sure he woudln't mind you taking it.";
 			CloseText = "Did that skeleton move?";
@@ -780,7 +892,100 @@ public class ScenarioManager : MonoBehaviour {
 			EventText = "You struggle with the rocks for some time but your attempts are fruitless. They won't budge!";
 			CloseText = "I'll be back, rocks.";
 		}
-		return texture;
+		return null;
+	}
+
+	public void ScenarioTwentyOne(){
+		ScenarioId=21;
+		HeaderText = "Danger!";
+		EventText = "You are peacefully walking when you hear an aggressive buzz getting louder behind you. You turn around and realize you have been swamped by a rogue gang of red bees, out for loot...";
+		if(apiary.GetComponentInChildren<ApiaryOrganiser>().beeTruth["warrior"]){
+			OptionOne = "I CHOOSE YOU WARRIOR BEES!";
+		}else{
+			OptionOne = "Fight them";
+		}
+		OptionTwo = "Try to run!";
+	}
+	public Texture ScenarioTwentyOneOutcome(int outcome){
+		if(outcome==1&&apiary.GetComponentInChildren<ApiaryOrganiser>().beeTruth["warrior"]){
+			EventText = "You send your warrior bees out and with protective vigor they are able to overcome your assialiants, routing them to the hills!";
+			CloseText = "Woohoo!";
+		}else if(outcome==1){
+			EventText = "They beat you up and took your stuff... Though they admired your courage";
+			CloseText = "Nice!";
+			waterResult=Random.Range(-5,-7);
+			foodResult=Random.Range(-5,-7);
+			honeyResult=Random.Range(-10,-15);
+		}else if(outcome==2){
+			EventText = "They beat you up and took your stuff...";
+			CloseText = "Worth a try";
+			waterResult=Random.Range(-10,-15);
+			foodResult=Random.Range(-10,-15);
+			honeyResult=Random.Range(-20,-30);
+		}
+		return null;
+	}
+
+	public void ScenarioTwentyTwo(){
+		ScenarioId=22;
+		HeaderText = "Today is a good day!";
+		EventText = "You are walking merrily down the trail without a care in the world!";
+		OptionOne = "Whistle a tune!";
+		OptionTwo = "Enjoy the sights!";
+	}
+	public Texture ScenarioTwentyTwoOutcome(int outcome){
+		if(outcome==1){
+			EventText = "You whistle for some time and feel good as you hear the birds above following along.";
+			CloseText = "Nice!";
+		}else if(outcome==2){
+			EventText = "The world sure is beautiful! You feel good.";
+			CloseText = "Nice!";
+		}
+		return null;
+	}
+
+	public void ScenarioTwentyThree(){
+		ScenarioId=23;
+		HeaderText = "Stream";
+		EventText = "You come to a stream to refill your water bottle, it is very tranquil around these parts.";
+		OptionOne = "Draw some water";
+		OptionTwo = "Have a swim";
+	}
+	public Texture ScenarioTwentyThreeOutcome(int outcome){
+		if(outcome==1){
+			waterResult=Random.Range(15,30);
+			EventText="You drink deeply and fill up your reserves generously";
+			CloseText="Thank you nature!";
+		}else if(outcome==2){
+			waterResult=Random.Range(5,10);
+			foodResult=Random.Range(5,10);
+			honeyResult=Random.Range(5,10);
+			EventText="You lay on your back in the water and gently float away as the water carries you down stream. After some time it rests you on a bank, and next to you is an old camp site!";
+			CloseText="What luck!";
+		}
+		return null;
+	}
+
+	public void ScenarioTwentyFour(){
+		ScenarioId=24;
+		HeaderText = "";
+		EventText = "";
+		OptionOne = "";
+		OptionTwo = "";
+	}
+	public Texture ScenarioTwentyFourOutcome(int outcome){
+		return null;
+	}
+
+	public void ScenarioTwentyFive(){
+		ScenarioId=25;
+		HeaderText = "";
+		EventText = "";
+		OptionOne = "";
+		OptionTwo = "";
+	}
+	public Texture ScenarioTwentyFiveOutcome(int outcome){
+		return null;
 	}
 
 	//<<<<<<<<<<<------events past 30 are region specific------------->>>>>>>>>>>>>
@@ -1049,19 +1254,156 @@ public class ScenarioManager : MonoBehaviour {
 	}
 	public void ScenarioSixetyThree(){
 		ScenarioId=63;
-		HeaderText = "";
-		EventText = "";
-		OptionOne = "";
-		OptionTwo = "";
+		HeaderText = "Decisions";
+		EventText = "Your feet are draggin and the land keeps stretching to the horizion - your backpack is getting very heavy and you won't make it far unless you drop some weight... what is to go?";
+		OptionOne = "Food";
+		OptionTwo = "Water";
+	}
+	public Texture ScenarioSixetyThreeOutcome(int outcome){
+		if(outcome==1){
+			EventText = "You leave behind some food and already feel the weight lifting from your shoulders.";
+			CloseText = "I can do without...";
+			foodResult=Random.Range(-10,-20);
+		}else if(outcome==2){
+			EventText = "You leave behind some water and already feel the weight lifting from your shoulders.";
+			CloseText = "I can do without...";
+			waterResult=Random.Range(-10,-20);
+		}
+		return null;
 	}
 
-	//DESERT: oasis, lesson about hardship of desert, meet an alchemist (shop keepers brother)
+	//DESERT:
+	public void ScenarioSeventyOne(){
+		ScenarioId=71;
+		HeaderText = "Another person?";
+		EventText = "Across from you on the other side of the dune walks a man... Weren't you alone on this island? \n 'Hello my friend! I can read your surprise at meeting another human out here... I can see you have already met my brother the merchant - I can recognize his goods anywhere. I, my friend, am an Alchemist; searching these dunes to fulfill my legend. I wonder, what is yours?";
+		OptionOne = "Bee Keeping";
+		OptionTwo = "My Father";
+	}
+	public Texture ScenarioSeventyOneOutcome(int outcome){
+		if(outcome==1){
+			Texture texture=defaultTexture;
+			EventText = "'A noble pursuit indeed! To spread life and push the boundaries of what we know is a dream only few can realise. To help you on your way:'";
+			CloseText = "The man disappears";
+			string[] beeOutcomes = {"shore","forest","ocean","warrior","icy","stone"};
+			string bee = beeOutcomes[Random.Range(1,beeOutcomes.Length)]; //might cause out of bounds exception
+			beeQuantity = Random.Range(3,6);
+			foreach(GameObject text in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				if(text.GetComponentInChildren<RawImage>().texture.name==bee){
+					texture=text.GetComponentInChildren<RawImage>().texture;	
+					break;
+				}
+			}
+			return texture;
+		}else if(outcome==2){
+			EventText = "'The past is an elusive mistress, and thus is it's allure, though one must be careful living their life through the memories of another... For your travels:'";
+			CloseText = "The man dissapears";
+			waterResult=Random.Range(35,50);
+			foodResult=Random.Range(35,50);
+		}
+		return null;
+	}
+	public void ScenarioSeventyTwo(){
+		ScenarioId=72;
+		HeaderText = "Oasis";
+		EventText = "In the hazy delusion of the heat you think you spot an oasis up ahead. Drawing closer reveals your mind has not tricked you - animals of all kinds have gatherd here for salvation.";
+		OptionOne = "Drink from the Oasis";
+		OptionTwo = "Leave it";
+	}
+	public Texture ScenarioSeventyTwoOutcome(int outcome){
+		if(outcome==1){
+			EventText = "You drink deeply and draw some water to take with you. All animals are equal at the oasis.";
+			CloseText = "Slurp";
+			waterResult=Random.Range(23,42);
+		}else if(outcome==2){
+			EventText = "Salvation can only be found through fasting... A man's resolve is all he needs.";
+			CloseText = "You feel hardened";
+		}
+		return null;
+	}
+	public void ScenarioSeventyThree(){
+		ScenarioId=73;
+		HeaderText = "Mirage";
+		EventText = "In front of you appears a large entity - clear as day! What do you see?!";
+		OptionOne = "Secret Knowledge!";
+		OptionTwo = "My Father!";
+	}
+	public Texture ScenarioSeventyThreeOutcome(int outcome){
+		if(outcome==1){
+			EventText = "As you lean in to learn the unlearnable the vision shimmers in front of you and dissapears... Must've been your imagination.";
+			CloseText = "Was it really real?";
+		}else if(outcome==2){
+			EventText = "You approach the smile that beams down at you, and as you rise to greet the eyes you find yourself only staring into the sky... What happened?";
+			CloseText = "Was it really real?";
+		}
+		return null;
+	}
 
+	//OCEAN: can mostly be bland/boring/nothing happening (catch fish, wavey tide, boring day, etc)
+	public void ScenarioEightyOne(){
+		ScenarioId=81;
+		HeaderText = "Jumping Fish";
+		EventText = "To the side of your boat you occasionally spot gleaming fish jump from the water...";
+		OptionOne = "Get the rod!";
+		OptionTwo = "My hands will do!";
+	}
+	public Texture ScenarioEightyOneOutcome(int outcome){
+		if(outcome==1){
+			EventText = "You whip out your trusty rod and before long have caught a small number of fish. Dinner tonight is covered!";
+			CloseText = "Yum!";
+			foodResult=Random.Range(21,29);
+		}else if(outcome==2){
+			EventText = "The fish are less nimble than you expect and with your cat-like reflexes you are able to grab a number of them from the air.";
+			CloseText = "Yum!";
+			foodResult=Random.Range(20,30);
+		}
+		return null;
+	}
+
+	public void ScenarioEightyTwo(){
+		ScenarioId=82;
+		HeaderText = "WAVES!";
+		EventText = "A storm has set in and the water around you is growing. A huge wave summits the horizon and you have no idea what to do...";
+		OptionOne = "Turn this ship around!";
+		OptionTwo = "Try to get over it!";
+	}
+	public Texture ScenarioEightyTwoOutcome(int outcome){ //add some chance in here maybe later?
+		if(outcome==1){
+			EventText = "You are not sure what happened. You wake up in your boat floating through sunny shores exhausted and wet... some of your supplies are missing, presumably washed into the dank depths of the sea.";
+			CloseText = "Did I black out?";
+			foodResult=Random.Range(-10,-20);
+			waterResult=Random.Range(-10,-20);
+			honeyResult=Random.Range(-10,-20);
+		}else if(outcome==2){
+			EventText = "With the might of a thousand men you are able to push the oars beyond their usual capacity and beeline for the wave. Your boat starts to gain height and is tipping in angle, almost to a full ninety degrees until... you get over it and find yourself being boosted down the other side!";
+			CloseText = "Whee!";
+		}
+		return null;
+	}
+
+	public void ScenarioEightyThree(){
+		ScenarioId=83;
+		HeaderText = "Bored";
+		EventText = "The sea can be a trying mistress... you've been sailing a whole day without a single happeneing, and the boat is barely large enough to lay down in...";
+		OptionOne = "Look for some land.";
+		OptionTwo = "Look down into the sea.";
+	}
+	public Texture ScenarioEightyThreeOutcome(int outcome){
+		if(outcome==1){
+			EventText = "You search the horizon for some time before coming up with nothing.";
+			CloseText = "So bored.";
+		}else if(outcome==2){
+			EventText = "Beneath you is infinite depths of black, and your own unclean mug starting back into your eyes.";
+			CloseText = "I should shave.";
+		}
+		return null;
+	}
+
+
+	//<<<----- UNIQUE STORY SCENARIOS-------->>>> All story scenarios should reward with a rare bee
 
 
 	public void yuckyIf(int rand, Hex hex){
-
-		Debug.Log(hex.Elevation + " , " + rand);
 		if(identifyTile(hex,"mountain")){//we are on a mountain tile 
 			if(rand==1){
 				ScenarioSix(); //stone bees
@@ -1102,11 +1444,19 @@ public class ScenarioManager : MonoBehaviour {
 			}else if(rand==3){
 				ScenarioThree(); //warrior bees
 			}else if(rand==4){
-				ScenarioFiftyOne();
+				if(eventsThatHaveOccured.Contains(51)){
+					restOfIf(rand);
+				}else{
+					ScenarioFiftyOne();
+				}
 			}else if(rand==5){
 				ScenarioFiftyTwo();
-			}else if(rand==6){
-				ScenarioFiftyThree();
+			}else if(rand==6){ //only want players to be able to get one diligent bee
+				if(eventsThatHaveOccured.Contains(53)){
+					restOfIf(rand);
+				}else{
+					ScenarioFiftyThree();
+				}
 			}else{
 				restOfIf(rand);
 			}
@@ -1134,11 +1484,11 @@ public class ScenarioManager : MonoBehaviour {
 			}else if(rand==3){
 				ScenarioSeven(); //ocean bees
 			}else if(rand==4){
-				//ScenarioSeventyOne();
+				ScenarioSeventyOne();
 			}else if(rand==5){
-				//ScenarioSeventyTwo();
+				ScenarioSeventyTwo();
 			}else if(rand==6){
-				//ScenarioSeventyThree();
+				ScenarioSeventyThree();
 			}else{
 				restOfIf(rand);
 			}
@@ -1150,58 +1500,69 @@ public class ScenarioManager : MonoBehaviour {
 			}else if(rand==3){
 				ScenarioEighty(); //shore bees
 			}else if(rand==4){
-				//ScenarioEightyOne();
+				ScenarioEightyOne();
 			}else if(rand==5){
-				///ScenarioEightyTwo();
-			}else if(rand==6){
-				//ScenarioEightyThree();
+				ScenarioEightyTwo();
 			}else{
-				//OceanIf(rand);
+				ScenarioEightyThree(); //OTHER situation is just boring times at sea
 			}
 		}
 	}
 
+	public void createBookEvent(){
+		int rand = (int)Random.Range(9,20.99f);
+		if(rand==9){
+			ScenarioNine();
+		}else if(rand==10){
+			ScenarioTen();
+		}else if(rand==11){
+			ScenarioEleven();
+		}else if(rand==12){
+			ScenarioTwelve();
+		}else if(rand==13){
+			ScenarioThirteen();
+		}else if(rand==14){
+			ScenarioFourteen();
+		}else if(rand==15){
+			ScenarioFifteen();
+		}else if(rand==16){
+			ScenarioSixteen();
+		}else if(rand==17){
+			ScenarioSeventeen();
+		}else if(rand==18){
+			ScenarioEighteen();
+		}else if(rand==19){
+			ScenarioNineteen();		
+		}else if(rand==20){
+			ScenarioThirty();
+		}
+		if(backpack.itemTruth["book"]){
+			CreateEvent();
+		}
+		
+	}
 	public void restOfIf(int rand){ //if none of the other events occur
-		rand = Random.Range(7,21);
+		if(rand<999){
+			rand = (int)Random.Range(7,15.99f);
+		}//so that story events are not re-calculated
+
 		if(rand==7){
 			ScenarioOne();
 		}else if(rand==8){
 			ScenarioTwo();
-		}else if(rand==9&&backpack.itemTruth["book"]){
-			ScenarioNine();
-		}else if(rand==10&&backpack.itemTruth["book"]){
-			ScenarioTen();
-		}else if(rand==11&&backpack.itemTruth["book"]){
-			ScenarioEleven();
-		}else if(rand==12&&backpack.itemTruth["book"]){
-			ScenarioTwelve();
-		}else if(rand==13&&backpack.itemTruth["book"]){
-			ScenarioThirteen();
-		}else if(rand==14&&backpack.itemTruth["book"]){
-			ScenarioFourteen();
-		}else if(rand==15&&backpack.itemTruth["book"]){
-			ScenarioFifteen();
-		}else if(rand==16&&backpack.itemTruth["book"]){
-			ScenarioSixteen();
-		}else if(rand==17&&backpack.itemTruth["book"]){
-			ScenarioSeventeen();
-		}else if(rand==18&&backpack.itemTruth["book"]){
-			ScenarioEighteen();
-		}else if(rand==19&&backpack.itemTruth["book"]){
-			ScenarioNineteen();		
-		}else if(rand==20){
+		}else if(rand==9){
 			ScenarioTwenty();
-		}else if(rand==21){
-			//ScenarioTwentyOne();
-		}else if(rand==22){
-			//ScenarioTwentyTwo();
-		}else if(rand==23){
-			//ScenarioTwentyThree();
-		}else if(rand==24){
-			//ScenarioTwentyFour();
-		}else if(rand==25){
-			//ScenarioTwentyFive();
-		}else if(rand==26){
+		}else if(rand==10){
+			ScenarioTwentyOne();
+		}else if(rand==11){
+			ScenarioTwentyTwo();
+		}else if(rand==12){
+			ScenarioTwentyThree();
+		}else if(rand==13){
+			ScenarioTwentyFour();
+		}else if(rand==14){
+			ScenarioTwentyFive();
+		}else if(rand==15){
 			//ScenarioTwentySix();
 		}else if(rand==27){
 			//ScenarioTwentySeven();
@@ -1211,13 +1572,42 @@ public class ScenarioManager : MonoBehaviour {
 			//ScenarioTwentyNine();		
 		}else if(rand==30){
 			//ScenarioThirty();
+		}else if(rand==1000){
+			ScenarioStoryOneStart();
+		}else if(rand==1002){
+			ScenarioStoryOneAfter();
+		}else if(rand==2000){
+			ScenarioStoryTwoStart();
+		}else if(rand==2001){
+			ScenarioStoryTwoBefore();
+		}else if(rand==2002){
+			ScenarioStoryTwoAfter();
+		}else if(rand==3000){
+			ScenarioStoryThreeStart();
+		}else if(rand==3001){
+			ScenarioStoryThreeBefore();
+		}else if(rand==3002){
+			ScenarioStoryThreeAfter();
+		}else if(rand==4000){
+			ScenarioStoryFourStart();
+		}else if(rand==4001){
+			ScenarioStoryFourBefore();
+		}else if(rand==4002){
+			ScenarioStoryFourAfter();
+		}else if(rand==5000){
+			ScenarioStoryFiveStart();
+		}else if(rand==5001){
+			ScenarioStoryFiveBefore();
+		}else if(rand==5002){
+			ScenarioStoryFiveAfter();
 		}else{
-			rand = Random.Range(7,21);
+			rand = (int)Random.Range(7,9.99f);
 			restOfIf(rand); //might be something to do with here
 		}
 	}
 
 	public Texture yuckyOutcomeIf(int rand){
+		eventsThatHaveOccured.Add(ScenarioId);
 		if(ScenarioId==1){
 			return ScenarioOneOutcome(rand);
 		}else if(ScenarioId==2){
@@ -1263,15 +1653,15 @@ public class ScenarioManager : MonoBehaviour {
 		}else if(ScenarioId==20){
 			return ScenarioTwentyOutcome(rand);
 		}else if(ScenarioId==21){
-			//ScenarioTwentyOneOutcome(rand);
+			return ScenarioTwentyOneOutcome(rand);
 		}else if(ScenarioId==22){
-			//ScenarioTwentyTwoOutcome(rand);
+			return ScenarioTwentyTwoOutcome(rand);
 		}else if(ScenarioId==23){
-			//ScenarioTwentyThreeOutcome(rand);
+			return ScenarioTwentyThreeOutcome(rand);
 		}else if(ScenarioId==24){
-			//ScenarioTwentyFourOutcome(rand);
+			return ScenarioTwentyFourOutcome(rand);
 		}else if(ScenarioId==25){
-			//ScenarioTwentyFiveOutcome(rand);
+			return ScenarioTwentyFiveOutcome(rand);
 		}else if(ScenarioId==26){
 			//ScenarioTwentySixOutcome(rand);
 		}else if(ScenarioId==27){
@@ -1281,7 +1671,7 @@ public class ScenarioManager : MonoBehaviour {
 		}else if(ScenarioId==29){
 			//ScenarioTwentyNineOutcome(rand);		
 		}else if(ScenarioId==30){
-			//ScenarioThirtyOutcome(rand);
+			ScenarioThirtyOutcome(rand);
 		}else if(ScenarioId==31){
 			return ScenarioThirtyOneOutcome(rand);
 		}else if(ScenarioId==32){
@@ -1294,8 +1684,827 @@ public class ScenarioManager : MonoBehaviour {
 			return ScenarioFourtyTwoOutcome(rand);
 		}else if(ScenarioId==43){
 			return ScenarioFourtyThreeOutcome(rand);
+		}else if(ScenarioId==51){
+			return ScenarioFiftyOneOutcome(rand);
+		}else if(ScenarioId==52){
+			return ScenarioFiftyTwoOutcome(rand);
+		}else if(ScenarioId==53){
+			return ScenarioFiftyThreeOutcome(rand);
+		}else if(ScenarioId==61){
+			return ScenarioSixetyOneOutcome(rand);
+		}else if(ScenarioId==62){
+			return ScenarioSixetyTwoOutcome(rand);
+		}else if(ScenarioId==63){
+			return ScenarioSixetyThreeOutcome(rand);
+		}else if(ScenarioId==71){
+			return ScenarioSeventyOneOutcome(rand);
+		}else if(ScenarioId==72){
+			return ScenarioSeventyTwoOutcome(rand);
+		}else if(ScenarioId==73){
+			return ScenarioSeventyThreeOutcome(rand);
+		}else if(ScenarioId==81){
+			return ScenarioEightyOneOutcome(rand);
+		}else if(ScenarioId==82){
+			return ScenarioEightyTwoOutcome(rand);
+		}else if(ScenarioId==83){
+			return ScenarioEightyThreeOutcome(rand);
 		}
-		eventsThatHaveOccured.Add(ScenarioId);
 		return null;
+	}
+
+	//TRIBAL VILLAGE (1 bee needed - 1 natural)
+	//requires a small offering of forest bees who will show the player where an old notebook is hidden. They hav an attunement to these kinds of things
+	//CAN alter eventns functions a little so we can chain from opening screen to opening screen etc OR just change text on the same one until the end
+	//IF it equals 3 then just reformat text etc.
+
+	//SMALL HOLDING (2 bees needed - 2 natural)
+	//has been taken over by aggressive bees who will attack the player when confronted
+	//NEED: ocean bees to pacify the warriors, and then warriors to find what they were guarding
+	//they were guarding ______ (journal entry and strange bee)
+
+	//TOWN (3 bees needed - 1 natural 2 unnatural)
+	//town is deserted
+	//NEED: stone bees to show you where the hole into the cave is, worker bees to clear rocks from entrance, ice bees to show you safe passage across precarious ice
+	//you find ______ (journal entry and strange bee)
+
+	//CASTLE (4 bees needed - 1 natural 2 unnatural 1 high tier unnatural)
+
+	//OCCULTISTS CASTLE (5 bees needed - 1 natural 1 high tier natural 1 unnatural 2 high tier unnatural)
+	
+	
+	//TRIBAL ENCAMPMENT
+	private bool scenarioOneCondition=false; private Texture scenarioOneTexture;
+	public void ScenarioStoryOneStart(){
+		ScenarioId = 1000;
+		storyChain = 0;
+		HeaderText = "On the trail...";
+		EventText = "You approach a small, deserted encampment. A few tents lay scattered around amongst various debris and the ashes of many nights worth of fires. You are the first person to step foot here for some time.";
+		OptionOne = "Look around";
+		OptionTwo = "Not for me [Leave]";
+		foreach(GameObject obj in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			Bee bee = obj.GetComponentInChildren<Bee>();
+			if(bee.name=="worker"&&bee.quantity>0){
+				scenarioOneCondition=true;
+			}
+			if(bee.name=="plains"){
+				scenarioOneTexture=obj.GetComponentInChildren<RawImage>().texture;
+				beeQuantity = Random.Range(4,6);
+			}
+		}
+	}
+	//MISC CHAINS FOR THE STORY EVENTS
+	public void storyEventOne(int option){
+		if(storyChain==0){ //STEP ONE: sending bees to explore
+			if(option==1){
+				//Debug.Log(scenarioOneCondition);
+				HeaderText = "Investigating";
+				EventText = "You decide to rummage through the remains and see what you can turn up...";
+				OptionOne = "Search yourself";
+				if(scenarioOneCondition){
+					OptionTwo = "Send Worker drones";
+				}else{
+					OptionTwo = "Let your bees have a look";
+				}
+				SetStoryTexts();
+				storyChain+=1;
+			}else if(option==2){
+				EventText = "You decide picking through these remains is not the best idea at the moment. Perhaps you will come back later.";
+				CloseText = "...";
+				EndStoryEvent(null); //PASSES IN A TEXTURE
+			}
+
+		}else if(storyChain==1){
+			if(option==1){
+				EventText = "You search through the remains but turn up little, even after an aggressive inspection. You walk away unsatisfied, sure that you missed something. It occurs to you that maybe certain kinds of bees could help in your endeavour...";
+				CloseText = "I'll be back!";
+				EndStoryEvent(null); 
+			}else if(option==2){
+				if(scenarioOneCondition){
+					EventText = "You release your worker drones and they seem to stand still, communing with one another for a time before setting out. You follow them as they thoroughly rummage through the remains, revealing a hidden diary amongst a satchel of small, timid bees before long. The diary points you to the old mining town in the area, suggesting your father was headed that way, convinced it held knowledge he needed to further his studies...";
+					CloseText = "A clue!";
+					boi.storyProgress+=1;
+					boi.highlightStory(boi.storyProgress,boi.storyProgress-1);
+					EndStoryEvent(scenarioOneTexture);
+				}else{
+					EventText = "You release some bees and they stay still for a second, confused, before all spreading off in different directions... Their efforts are fruitless. Perhaps specific kinds of bees will be better for certain tasks...";
+					CloseText = "Chaos.";
+					EndStoryEvent(null);
+				}
+			}
+		}
+	}
+
+
+	//SMALL HOLDING
+	public void ScenarioStoryTwoStart(){
+		ScenarioId = 2000;
+		storyChain = 0;
+		ScenarioTwoConditions = new List<string>();
+		HeaderText = "On the trail...";
+		EventText = "You lay in wait around the outskirts of a small abandoned town. This is the place the diary has pointed you to...";
+		OptionOne = "Lets investigate!";
+		OptionTwo = "Maybe later [Leave]";
+		foreach(GameObject obj in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			Bee bee = obj.GetComponentInChildren<Bee>();
+			if(bee.name=="warrior"&&bee.quantity>0){
+				ScenarioTwoConditions.Add("warrior");
+			}
+			if(bee.name=="forest"&&bee.quantity>0){
+				ScenarioTwoConditions.Add("forest");
+			}
+			if(bee.name=="nice"){
+				scenarioTwoTexture=obj.GetComponentInChildren<RawImage>().texture;
+				beeQuantity = Random.Range(4,6);
+			}
+		}
+	}
+	
+	private List<string> ScenarioTwoConditions; private Texture scenarioTwoTexture;
+	public void storyEventTwo(int option){
+		if(storyChain==0){ //initial investigation, need warrior bees to get rid of other bees there
+			if(option==1){
+				EventText = "Approaching the village you notice a large gang of warrior bees have infested the place, making it their own. They seem to be guarding something...";
+				if(ScenarioTwoConditions.Contains("warrior")){
+					OptionOne="Send in your warriors!";
+				}else if(backpack.itemTruth["sword"]){
+					OptionOne="Draw your shiny sword!";
+				}else{
+					OptionOne="We have to go through them...";
+				}
+				
+				if(ScenarioTwoConditions.Contains("forest")){
+					OptionTwo="Send your forest bees to calm them";
+				}else if(backpack.itemTruth["shoe"]){
+					OptionTwo="Try to sneak past";
+				}else{
+					OptionTwo="Try to reason with them";
+				}
+				SetStoryTexts();
+				storyChain+=1;
+			}else if(option==2){
+				EventText = "The town can wait another day, as can the myster surrounding your father... Perhaps you will come back later.";
+				CloseText = "...";
+				EndStoryEvent(null);
+			}
+
+		}else if(storyChain==1){//need warrior bees to find what they were guarding
+			if(option==1){
+				if(ScenarioTwoConditions.Contains("warrior")){
+					EventText = "Your warriors triumphantly dive in with a stunning pincer movement to drive off the hovering bees. Sun Tzu would be proud! While the initial attack looks to be a crushing success eventually the tides turn and the pure numbers on the enemy side overwhelm your boys.";
+					CloseText = "Retreat!";
+					EndStoryEvent(null);
+				}else if(backpack.itemTruth["sword"]){
+					EventText = "You galliantly charge in with your sword drawn, face like steel. Initially some bees seem startled but you realise they are way too many for this tactic to be effective. They quikcly turn on you and route you out of the town...";
+					CloseText = "Retreat!";
+					EndStoryEvent(null);
+				}else{
+					EventText = "You walk up to the bees determined to get through, you're not sure how but by god you're determined! Unfortunately determination is no match for their stunning military prowess and you are soon routed from the town.";
+					CloseText = "Retreat!";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(ScenarioTwoConditions.Contains("forest")){
+					EventText = "Your bees seem to commune for some time before setting out, and you notice that a light breeze has picked up in this time. Like magic, your drones seem to pacify the masses and are able to make them disperse after a few moments of silence. The wind dies down and the town is yours...";
+					if(ScenarioTwoConditions.Contains("warrior")){
+						OptionOne="Let your Warriors loose!";
+					}else{
+						OptionOne="They must have been guarding something";
+					}
+					OptionTwo = "All you forest dwellers!";
+					SetStoryTexts();
+					storyChain+=1;
+				}else if(backpack.itemTruth["shoe"]){
+					EventText = "You sneak past the main, buzzing hub of the town with ease. However, the more of the town you circle the more you see how overrun the entire place is. Stealth will not help you here...";
+					CloseText = "Hmm...";
+					EndStoryEvent(null); //HAVE IT SO storyChain-=1 maybe so we can restart
+				}else{
+					EventText = "Your mouth is alight with pure fire as you lecture the bees on the triviality of anger and violence, and how a simple traveller like you should be permitted to explore their town without confrontation. \n\n They are not impressed by this.";
+					CloseText = "Retreat!";
+					EndStoryEvent(null); 
+				}
+			}
+		}else if(storyChain==2){//success or failure
+			if(option==1){
+				if(ScenarioTwoConditions.Contains("warrior")){
+					EventText = "Your warriors eagerly exit your satchel and culminate around the source that must've been attracting the others. It is a satchel much like yours containing a number of strange, pink bees, along with a diary excerpt in what is clearly your fathers handwriting. It points to the nearby industrial town!";
+					CloseText = "Another clue!";
+					boi.storyProgress+=1;
+					boi.highlightStory(boi.storyProgress,boi.storyProgress-1);
+					EndStoryEvent(scenarioTwoTexture);
+				}else{
+					OptionOne="You stand over what you believe to be the source of what the warriors were protecting but can see nothing, it looks exceptionally ordinary to you. You can hear a malevolent buzzing on the horizon and decide to moved on before it returns for vengeance!";
+					CloseText = "Hmm...";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				EventText = "Your Forest drones look at you confused, unsure of what you want them to do. Even after some time they have not moved. You can hear a malevolent buzzing on the horizon and decide to moved on before it returns for vengeance!";
+				CloseText = "Hmm...";
+				EndStoryEvent(null);
+			}
+		}
+	}
+
+
+	//INDUSTRIOUS VILLAGE
+	public void ScenarioStoryThreeStart(){ //USES ICY/OCEAN/STONE
+		ScenarioId = 3000;
+		storyChain = 0;
+		ScenarioThreeConditions = new List<string>();
+		HeaderText = "On the trail...";
+		EventText = "You approach the old industrial village, hot on the heels of your father...";
+		OptionOne = "Lets investigate!";
+		OptionTwo = "Maybe later [Leave]";
+		foreach(GameObject obj in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			Bee bee = obj.GetComponentInChildren<Bee>();
+			if(bee.name=="icy"&&bee.quantity>0){
+				ScenarioThreeConditions.Add("icy");
+			}
+			if(bee.name=="ocean"&&bee.quantity>0){
+				ScenarioThreeConditions.Add("ocean");
+			}
+			if(bee.name=="stone"&&bee.quantity>0){
+				ScenarioThreeConditions.Add("stone");
+			}
+			if(bee.name=="intelligent"){
+				scenarioThreeTexture=obj.GetComponentInChildren<RawImage>().texture;
+				beeQuantity = Random.Range(4,6);
+			}
+		}
+	}
+	private List<string> ScenarioThreeConditions; private Texture scenarioThreeTexture;
+	public void storyEventThree(int option){
+		if(storyChain==0){ 
+			if(option==1){
+				EventText="You enter the zone and all seems quiet. The cold has set in early over this area and much of it is snowy or iced over. A large patch of dubious looking snow seperates you from the main activity hub...";
+				if(ScenarioThreeConditions.Contains("ocean")){
+					OptionOne="Release the ocean bees";
+				}else if(backpack.itemTruth["shoe"]){
+					OptionOne="Adorn your shoes";
+				}else{
+					OptionOne="Attempt the crossing";
+				}
+				if(ScenarioThreeConditions.Contains("icy")){
+					OptionTwo="Release the ice bees";
+				}else{
+					OptionTwo="Jump it";
+				}
+				SetStoryTexts();
+				storyChain+=1;
+			}else if(option==2){
+				EventText = "The industrial area can wait another day, as can the myster surrounding your father... Perhaps you will come back later.";
+				CloseText = "...";
+				EndStoryEvent(null);
+			}
+
+		}else if(storyChain==1){
+			if(option==1){
+				if(ScenarioThreeConditions.Contains("ocean")){
+					EventText = "Your bees look at you confused and soon return to their satchel. They don't like this kind of environment.";
+					CloseText = "Hmm";
+					EndStoryEvent(null);
+				}else if(backpack.itemTruth["shoe"]){
+					EventText = "Your shoes make quick work of the snow, effortlessly carrying you across it. As you silently drift you notice each step getting deeper and deeper until you are nearly up to your chest! Perhaps this is not the best idea...";
+					CloseText = "Time to turn back";
+					EndStoryEvent(null);
+				}else{
+					EventText = "After walking into the snow for a short time you realise it is either too deep or too treacherous to pass blindly...";
+					CloseText = "Time to turn back";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(ScenarioThreeConditions.Contains("icy")){
+					EventText="Your bees excitedly exit your satchel and wait expectantly for you to follow them. Tracing their movements you are able to easily find a safe path across. Now at the main building, a towering complex of stone, you decide what your next move is. Somewhere in the distance you can faintly hear running water...";
+					if(ScenarioThreeConditions.Contains("stone")){
+						OptionOne="Search with your Stone bees";//CORRECT
+					}else{
+						OptionOne="Search the stone for clues"; 
+					}
+					if(ScenarioThreeConditions.Contains("ocean")){
+						OptionTwo="Use Ocean bees to find the noise source";
+					}else{
+						OptionTwo="Track the source of the sound";
+					}
+					SetStoryTexts();
+					storyChain+=1;
+				}else{
+					EventText = "You jump a short distance into the snow and sink very far... there is still a fair few metres between you and the other side...";
+					CloseText = "Time to turn back";
+					EndStoryEvent(null);
+				}
+			}
+		}else if(storyChain==2){
+			if(option==1){ //CORRECT
+				if(ScenarioThreeConditions.Contains("stone")){
+					EventText="At a snails pace your bees lead you to the large back wall of the facility. Though slow, they seem calculated, and dissapearing into the wall for a second, trigger some machination as a small section of the floor beneath you drops out! You find yourself in a dimly lit cavern, with the noise source sounding much closer...";
+					if(ScenarioThreeConditions.Contains("ocean")){
+						OptionOne="Follow your ocean bees!";
+					}else{
+						OptionOne="Find the noise source";
+					}
+					OptionTwo="Follow the cave";
+					SetStoryTexts();
+					storyChain+=1;
+				}else{
+					EventText = "You scour the various rock faces of the building but find nothing to help you in your search...";
+					CloseText = "Hmm";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(ScenarioThreeConditions.Contains("ocean")){
+					EventText = "Your ocean bees lead you to a large stone wall along the back of the facility and buzz frustratingly around it for a time before giving up... Perhaps it is empty after all?";
+					CloseText = "Hmm";
+					EndStoryEvent(null);
+				}else{
+					EventText = "You attempt to tune into the sound but it is so far and quiet that you soon realise your efforts are pointless... I wonder what it could be?";
+					CloseText = "Hmm";
+					EndStoryEvent(null);
+				}
+			}
+
+		}else if(storyChain==3){ //OCEAN BEES LEAD YOU DOWN RIVER TO OUTLET INTO THE OCEAN
+			if(option==1){
+				if(ScenarioThreeConditions.Contains("ocean")){
+					EventText="Your bees lead you through the tunnel, following the noise until abruptly they take a right hand turn into a recess you never would have spotted! A small stream runs through it up to what appears to be someones chambers... Or what was. On the nightchamber you find a very perculiar bee amongst some of your fathers study notes. Apparently this 'Beemancer' had died in pursuit of this rare species, and now it is yours...";
+					CloseText = "This is getting weird...";
+					EndStoryEvent(scenarioThreeTexture);
+					boi.storyProgress+=1;
+					boi.highlightStory(boi.storyProgress,boi.storyProgress-1);
+				}else{
+					EventText = "You follow the noise through the lengths of the dingy cave. It shrinks and twists, being barely able to crawl through until... LIGHT! You emerge from the cave and find yourself outside again, peacefully resting on the beach...";
+					CloseText = "Hmm";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				EventText = "You follow the twists and turns of the dingy cave. It shrinks and twists, being barely able to crawl through until... LIGHT! You emerge from the cave and find yourself outside again, peacefully resting on the beach...";
+				CloseText = "Hmm";
+				EndStoryEvent(null);
+			}
+		}
+	}
+
+
+	public void ScenarioStoryFourStart(){ //USES ICY/OCEAN/STONE
+		ScenarioId = 4000;
+		storyChain = 0;
+		ScenarioFourConditions = new List<string>();
+		HeaderText = "On the trail...";
+		EventText = "You approach a towering castle of stone and iron... I wonder who built this, and why it was abandoned?";
+		OptionOne = "Lets investigate!";
+		OptionTwo = "Maybe later [Leave]";
+		foreach(GameObject obj in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			Bee bee = obj.GetComponentInChildren<Bee>();
+			if(bee.name=="shore"&&bee.quantity>0){
+				ScenarioFourConditions.Add("shore");
+			}
+			if(bee.name=="bland"&&bee.quantity>0){
+				ScenarioFourConditions.Add("bland");
+			}
+			if(bee.name=="intelligent"&&bee.quantity>0){
+				ScenarioFourConditions.Add("intelligent");
+			}
+			if(bee.name=="magic"&&bee.quantity>0){
+				ScenarioFourConditions.Add("magic");
+			}
+			if(bee.name=="exotic"){
+				scenarioFourTexture=obj.GetComponentInChildren<RawImage>().texture;
+				beeQuantity = Random.Range(4,6);
+			}
+		}
+	}
+	private List<string> ScenarioFourConditions; private Texture scenarioFourTexture;
+
+	public void storyEventFour(int option){
+		if(storyChain==0){ 
+			if(option==1){
+				EventText="A large moat stands between you and the castle. The bridge is raised and a servants door, the only way you can see into the castle, is filled with crocodiles.";
+				if(ScenarioFourConditions.Contains("shore")){
+					OptionOne="Send your shore bees!";
+				}else if(ScenarioFourConditions.Contains("bland")){
+					OptionOne="GO BLAND BEES!";
+				}else{
+					OptionOne="Stealthily swim around...";
+				}
+				if(backpack.itemTruth["sword"]){
+					OptionTwo="Intimidate them with your sword";
+				}else{
+					OptionTwo="Rush for the door!";
+				}
+				SetStoryTexts();
+				storyChain+=1;
+			}else if(option==2){
+				EventText = "The castle can wait another day, as can the myster surrounding your father... Perhaps you will come back later.";
+				CloseText = "...";
+				EndStoryEvent(null);
+			}
+		}else if(storyChain==1){
+			if(option==1){
+				if(ScenarioFourConditions.Contains("shore")){
+					EventText = "Your bees drift slowly towards the water and settle down by it's edge. The hungry crocs charge but soon stop in their tracks, brought to tears by the hums of your lost companions... with a tear in your eye you slip into the castle. You now find yourself in an old passage with a single exit - a dubious looking corridor filled with various armours and trinkets that is obviously trapped! A bad aura eminates from within...";
+					if(ScenarioFourConditions.Contains("magic")){
+						OptionOne="Magic bees always find a way!";
+					}else if(backpack.itemTruth["shoe"]){
+						OptionOne="Use your shoes to avoid the traps";
+					}else{
+						OptionOne="Risk it!";
+					}
+					if(ScenarioFourConditions.Contains("bland")){
+						OptionTwo="GO BLAND BEES!";
+					}else{
+						OptionTwo="Not worth the danger";
+					}
+					SetStoryTexts();
+					storyChain+=1;
+				}else if(backpack.itemTruth["bland"]){
+					EventText = "Your bees stand by obliviously and do nothing... What did you expect?";
+					CloseText = "...";
+					EndStoryEvent(null);
+				}else{
+					EventText = "You go some distance towards the door, creeping through the water towards the back of the hungry animals, before one spots you and alerts the others...";
+					CloseText = "RUN!";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(backpack.itemTruth["sword"]){
+					EventText = "You whip out your trusted sword and point it towards the crocodiles... it seems they are less prone to intimidation than bees. After waiting a second they charge you!";
+					CloseText = "RUN!";
+					EndStoryEvent(null);
+				}else{
+					EventText = "You make a burst for the door but the crocs are quick to react. You never really stood a chance.";
+					CloseText = "RUN!";
+					EndStoryEvent(null);
+				}
+			}
+		}else if(storyChain==2){
+			if(option==1){
+				if(ScenarioFourConditions.Contains("magic")){
+					EventText = "You release your bees and watch as they approach the passage, confer, and then return to you without hesitation. Whatever is down there, they want no part in...";
+					CloseText = "Hmm...";
+					EndStoryEvent(null);
+				}else if(backpack.itemTruth["shoe"]){
+					EventText = "You adorn your shoes and make it a few steps before you hear something dart across your path - what was that?!... You decide crossing blind is not worth the risk.";
+					CloseText = "I'll be back...";
+					EndStoryEvent(null);
+				}else{
+					EventText = "You take a single step and hear something dart across your path - what was that?!... You decide crossing blind is not worth the risk.";
+					CloseText = "I'll be back...";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(ScenarioFourConditions.Contains("bland")){
+					EventText="Your bland bees drift through the room oblivious to the traps around them... and make it to the other side safely? Sometimes a room is purely decorative I suppose. At the end of the corridor lies a giant wall with a huge enscription on it in a language you dont understand. You can not see any other exits... It reads: " + generateRandomHeader(3) + " " + generateRandomHeader();
+					OptionOne="Send your smartest bees";
+					if(backpack.itemTruth["book"]){
+						OptionTwo="Consult the Bee-Compendium";
+					}else{
+						OptionTwo="Try to decipher it";
+					}
+					SetStoryTexts();
+					storyChain+=1;
+				}else{
+					EventText = "I dont deserve to die here...";
+					CloseText = "...";
+					EndStoryEvent(null);
+				}
+			}
+		}else if(storyChain==3){
+			if(option==1){
+				if(ScenarioFourConditions.Contains("intelligent")){
+					EventText = "Your bees stand around for some time before the ones emminating an orange glow step up to the wall. After a series of melodic hums the wall clicks and slides away, revealing a hidden room, and a dastardly scene... Incomprehensible books are strewn everywhere and in the middle of the room sits a warped worship site to an unknown entity. It emminates a strange energy...";
+					if(backpack.itemTruth["book"]){
+						OptionOne="Consult the Bee-Compendium";
+					}else{
+						OptionOne="Investigate the alter";
+					}
+					OptionTwo="Send your weirdest bees";
+					SetStoryTexts();
+					storyChain+=1;
+				}else{
+					EventText = "Your bees are smart little creatures but between them cant seem to understand what the symbols mean... perhaps these types don't quite have the mental fortitude for it?";
+					CloseText = "I'll be back";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(backpack.itemTruth["book"]){
+					EventText = "You flip through page after page and after some time realise there is nothing remotely related to the symbols. Whatever these runes are, they are not considered conventional knowledge...";
+					CloseText = "Hmm";
+					EndStoryEvent(null);
+				}else{
+					EventText = "Looking at the runes your brain feels like it is swelling in waves... you have to look away before you nearly black out.";
+					CloseText = "That was weird...";
+					EndStoryEvent(null);
+				}
+			}
+		}else if(storyChain==4){
+			if(option==1){
+				if(backpack.itemTruth["book"]){
+					EventText = "You look at your book trying to find answers but find yourself unable to read the text held within... the letters warp and shift before your eyes, as if they are about to melt off of the page!";
+					CloseText = "Get me out of here.";
+					EndStoryEvent(null);
+				}else{
+					EventText = "You within a few metres of the alter before you feel a slight trickle of blood run down your nose. Before you are aware what has happened you wake up outside the castle walls, gently resting on the grass...";
+					CloseText = "I did not like that.";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(ScenarioFourConditions.Contains("magic")){
+					EventText = "While your other bees look perplexed, your dark purple bees float through the field effortlessly and after a few seconds you notice it has died down... hesitantly, you step onto the alter and find the barely-legible scramblings of your father, amongst some unnaturally glowing bees who you did not notice until the removal of the field. They must've been trapped inside... I don't want to know what happened here.";
+					CloseText = "I am close...";
+					EndStoryEvent(scenarioFourTexture);
+					boi.storyProgress+=1;
+					boi.highlightStory(boi.storyProgress,boi.storyProgress-1);
+				}else{
+					EventText = "Your most naturally attuned bees float around the alter in confusion. After some time they return to you, perplexed and visibly upset...";
+					CloseText = "Let us leave, friends.";
+					EndStoryEvent(null);
+				}
+			}
+		}
+	}
+
+	private string ScenarioFiveConditions="nope"; private Texture scenarioFiveTexture;
+	//END GAME SCENARIO 
+	public void ScenarioStoryFiveStart(){ //not going to be a very complicated scenario, very straightforward
+		ScenarioId = 5000;
+		storyChain = 0;
+		HeaderText = "On the trail...";
+		EventText = "In front of you stands the once mighty University... You have a feeling all paths end here.";
+		OptionOne = "Here I come!";
+		OptionTwo = "Maybe later [Leave]";
+		foreach(GameObject obj in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			Bee bee = obj.GetComponentInChildren<Bee>();
+			if(bee.name=="toxic"&&bee.quantity>0){
+				ScenarioFiveConditions = "toxic";
+			}
+			if(bee.name=="intelligentNice"){
+				scenarioFiveTexture=obj.GetComponentInChildren<RawImage>().texture;
+				beeQuantity = 1;
+			}
+		}
+	}
+
+	public void storyEventFive(int option){
+		if(storyChain==0){
+			if(option==1){
+				EventText="Entering the University sends a shiver down your spine... These once decadent halls seem distorted and malignant, as if the world itself is bending here. There are two wings to traverse, one on either side of you - Alchemy or Naturology?";
+				OptionOne="Alchemy";
+				OptionTwo="Naturology";
+				SetStoryTexts();
+				storyChain+=1;
+			}else if(option==2){
+				EventText = "Perhaps not knowing what happened to your father is for the best. Some secrets should remain shrouded in mystery...";
+				CloseText = "Let us leave, friends.";
+				EndStoryEvent(null);
+			}
+		}else if(storyChain==1){
+			if(option==1){
+				EventText="The Alchemical wing is filled with all manner of tormented machinations, violating and distilling evermore until all essence is transformed. The laboratories stretch on for some time before reaching an exit...";
+			}else if(option==2){
+				EventText="The Naturology wing is ripe with species and specimens from all the furthest and most exotic corners of the Earth. It is remarkable how science can reduce such majestic creatures to triviliality. The laboratories stretch on for some time before reaching an exit...";
+			}
+			OptionOne="Follow the corridor";
+			OptionTwo="Leave";
+			SetStoryTexts();
+			storyChain+=1;
+		}else if(storyChain==2){
+			if(option==1){
+				EventText="The corridor twists around and leads you to a single room... the apiary. There is a large lock on the door - the one thing in this place that is not ripe with decay...";
+				if(apiary.GetComponentInChildren<ApiaryOrganiser>().beeTruth["magic"]){
+					OptionOne="Use magic to cleanse it";
+				}else{
+					OptionOne="Pick the lock";
+				}
+				if(ScenarioFiveConditions=="toxic"){
+					OptionTwo="Fight fire with fire";
+				}else{
+					OptionTwo="Bash the lock";
+				}
+				storyChain+=1;
+				SetStoryTexts();
+			}else if(option==2){
+				EventText="You have learnt enough from this place. The pleasures of life are to be enjoyed, not studied...";
+				CloseText = "Good riddance";
+				EndStoryEvent(null);
+			}
+		}else if(storyChain==3){
+			if(option==1){
+				if(apiary.GetComponentInChildren<ApiaryOrganiser>().beeTruth["magic"]){
+					EventText="The thickness of black magic is too strong is this place - your bees try their best but are unable to stray far from your satchel before being forced to return, visibly in pain...";
+					CloseText = "Curse this place";
+					EndStoryEvent(null);
+				}else{
+					EventText="Despite your best efforts the lock does not budge... Another approach might do the trick.";
+					CloseText = "Curse this place";
+					EndStoryEvent(null);
+				}
+			}else if(option==2){
+				if(ScenarioFiveConditions=="toxic"){
+					EventText="Your toxic bees are able to melt through the lock in seconds... I suppose, like everything, decay has its purpose. The door is unlocked and you can feel a vile aura eminating from within. This may be your last chance to turn back...";
+					OptionOne="Curiosity besets me...";
+					OptionTwo="I do not want to know...";
+					SetStoryTexts();
+					storyChain+=1;
+				}else{
+					EventText="Ouch.";
+					CloseText = "Curse this place";
+					EndStoryEvent(null);
+				}
+			}
+		}else if(storyChain==4){
+			if(option==1){
+				EventText="You swing open the doors ready to face the worst! and are greeted by a turgid, twisting mass of metal... The purpose of the machine is unclear to you, but you can see a faint glow dawning from its main chamber. Opening the chamber you find a singularly, perculiar bee... your father. You are sure he is happy...";
+				CloseText = "I am happy";
+				EndStoryEvent(scenarioFiveTexture);
+				boi.storyProgress+=1;
+				boi.highlightStory(boi.storyProgress,boi.storyProgress-1);
+			}else if(option==2){
+				EventText="As you turn away and leave that accursed place you can feel you psyche lifted... You are confident you made the right choice, and are happy you get to focus on your true passion, beekeeping. For one must remember not to live their life through the past of another...";
+				CloseText = "I am happy";
+				EndStoryEvent(null);
+			}
+		}
+	}
+
+
+	public static void CreateDisasterousEvent(){
+
+		int rand = (int)Random.Range(0,3.99f);
+
+		if(rand==0){ //food and water are erased
+			HeaderText=instance.generateRandomHeader();
+			EventText="You feel like something terrible has happened... God you're hungry...";
+			instance.boi.UpdateResources(-10000,-10000,-10000);
+
+		}else if(rand==1){ //your bees get sick and start dying
+			HeaderText=instance.generateRandomHeader();
+			EventText="You feel like something horrible has happened... A thousand voices all silenced at once...";
+			foreach(GameObject obj in instance.apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				Bee bee = obj.GetComponentInChildren<Bee>();
+				if(bee.quantity>0){
+					int deletion = Random.Range(-3,-5);
+					instance.apiary.GetComponentInChildren<ApiaryOrganiser>().addToBeeQuantity(obj.GetComponentInChildren<RawImage>().texture, deletion);
+				}
+			}
+
+		}else if(rand==2){ //Have to create something different that is not shop keeper based, he dies way at end.
+			HeaderText=instance.generateRandomHeader();
+			EventText="You feel like something horrible has happened... An unending, horrific buzzing...";
+			//TODO: think of an other event that can occur for this. AT THE MOMENT simply turns all bees in the hive into bland bees
+			foreach(GameObject obj in instance.apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+				Bee bee = obj.GetComponentInChildren<Bee>();
+				if(bee.type=="bland"){
+					instance.apiary.GetComponentInChildren<ApiaryOrganiser>().addToBeeQuantity(obj.GetComponentInChildren<RawImage>().texture, 999);
+				}else if(bee.quantity>0){
+					instance.apiary.GetComponentInChildren<ApiaryOrganiser>().addToBeeQuantity(obj.GetComponentInChildren<RawImage>().texture, -100);
+				}
+			}
+		}else if(rand==3){
+			HeaderText=instance.generateRandomHeader();
+			EventText="You feel like something horrible has happened... The physical deletion of a million atoms...";
+			foreach(GameObject obj in instance.backpack.uniqueSlots){
+				if(obj.GetComponentInChildren<UniqueItem>().name!="cloak"){ //dimensional rip stays
+					obj.GetComponentInChildren<UniqueItem>().activated=false;
+				}
+			}
+			instance.backpack.createDict();
+		}
+
+		GameObject outcome = (GameObject) Instantiate(instance.closePrefab);
+		Text[] texts = outcome.GetComponentsInChildren<Text>();
+
+		//sets header and event text
+		if(texts[0].name=="HeaderText"){
+			texts[0].text = HeaderText;
+			texts[1].text = EventText;
+		}else{
+			texts[0].text = EventText;
+			texts[1].text = HeaderText;
+		}
+
+		//sets resources gained text
+		texts[2].text="?";
+		texts[3].text="?";
+		texts[4].text="?";
+		
+		//sets button text
+		outcome.GetComponentInChildren<Button>().GetComponentInChildren<Text>().text = "Oh no...";
+
+
+		outcome.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform);
+		outcome.transform.localScale=Vector3.one;
+
+		defaultPos.y = Screen.height/2;
+		defaultPos.x = Screen.width/2;
+		outcome.transform.position = defaultPos;
+	}
+
+	public string generateRandomHeader(int length=0){
+		char[] chars = {'a','f','t','i','l','m','z','x','c','2','1','3','4','5','6','7','8','9','0','!','@','#','$','%','^','&','*','(',')','_','-','+','=','.',',','>','<','?'};
+		if(length==0){
+			length = Random.Range(9,23);
+		}
+		char[] output = new char[length];
+		for(int i=0;i<length;i++){
+			int index = Random.Range(0,chars.Length);
+			output[i] = chars[index];
+		}
+		string s = new string(output);
+		return s;
+	}
+
+	public static void CreateEndGameEvent(){
+		//TODO: trigger for game ending event
+
+		foreach(GameObject obj in instance.backpack.uniqueSlots){ //adds dimensional rip to backpack
+			UniqueItem item = obj.GetComponentInChildren<UniqueItem>();
+			if(item.uniqueName=="hole"){
+				item.activated=true; 
+				instance.backpack.updateTextures(); 
+				instance.backpack.createDict();
+				return;
+			}
+		}
+
+		ApiaryOrganiser apOrg = instance.apiary.GetComponentInChildren<ApiaryOrganiser>();
+		foreach(GameObject bee in apOrg.bees){ //sets all bee quantites to "?"
+			bee.GetComponentInChildren<Text>().text = "?";
+		}
+		
+
+		//Create shop keeper event where he comes and is dead and the game ends
+		//Create game ending screen
+		//Set day timer to "?"
+		//Set food, water, honey to "???"
+	}
+
+
+
+	public void ScenarioStoryOneAfter(){
+		EventText = "The camp is alive with the buzzing of bees who have moved in. The area feels alive.";
+		CloseText = "Nice!";
+		foreach(GameObject bee in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			if(bee.GetComponentInChildren<RawImage>().name=="common"){
+				EndStoryEvent(bee.GetComponentInChildren<RawImage>().texture, false);
+			}
+		}
+	}
+
+	public void ScenarioStoryTwoBefore(){
+		EventText = "You can hear an aggressive buzz emminating from the town centre. You are not sure you should investigate... yet.";
+		CloseText = "Another time.";
+		EndStoryEvent(null);
+	}
+	public void ScenarioStoryTwoAfter(){
+		EventText = "With nothing to guard the resident bees have abandoned the town, leaving it a refuge displaced denizens of the forest. It is very peaceful here.";
+		CloseText = "Nice!";
+		foreach(GameObject bee in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			if(bee.GetComponentInChildren<RawImage>().name=="forest"){
+				EndStoryEvent(bee.GetComponentInChildren<RawImage>().texture, false);
+			}
+		}
+	}
+
+	public void ScenarioStoryThreeBefore(){
+		EventText = "The industrial zone is unusually quiet and covered in a large blanket of snow... is it always this deep around these parts? Perhaps you will explore this in the future.";
+		CloseText = "Another time";
+		EndStoryEvent(null);
+	}
+	public void ScenarioStoryThreeAfter(){
+		EventText = "The snow has largely melted from this area and life is returning... it is becoming a hub of activity for bees of all kinds!";
+		CloseText = "Nice!";
+		foreach(GameObject bee in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			if(bee.GetComponentInChildren<RawImage>().name=="nice"){
+				EndStoryEvent(bee.GetComponentInChildren<RawImage>().texture, false);
+			}
+		}
+	}
+
+	public void ScenarioStoryFourBefore(){
+		EventText = "There are many rumours about this castle - its heritage and history are largely shrouded in secret... Perhaps one day you will venture forth in search of these secrets...";
+		CloseText = "Another time";
+		EndStoryEvent(null);
+	}
+	public void ScenarioStoryFourAfter(){
+		EventText = "Since dismantling the sacreligious aparatus a vibe of tranquility has returned to the castle, and an ambitious group of particularly skilled bees has made it their home.";
+		CloseText = "Nice!";
+		foreach(GameObject bee in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			if(bee.GetComponentInChildren<RawImage>().name=="magic"){
+				EndStoryEvent(bee.GetComponentInChildren<RawImage>().texture, false);
+			}
+		}
+	}
+
+	public void ScenarioStoryFiveBefore(){
+		EventText = "The old University... decrepit and delapidated. What secrets it must hold... One day you might choose to explore its mysterious halls...";
+		CloseText = "Another time";
+		EndStoryEvent(null);
+	}
+	public void ScenarioStoryFiveAfter(){
+		EventText = "You can hear bees hornily buzzing... you go Dad!";
+		CloseText = "Nice!";
+		foreach(GameObject bee in apiary.GetComponentInChildren<ApiaryOrganiser>().bees){
+			if(bee.GetComponentInChildren<RawImage>().name=="intelligentNice"){
+				EndStoryEvent(bee.GetComponentInChildren<RawImage>().texture, false);
+			}
+		}
 	}
 }

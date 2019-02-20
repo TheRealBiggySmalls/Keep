@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+
+[Serializable]
 
 public class TurnOrganiser : MonoBehaviour {
 
@@ -34,12 +37,14 @@ public class TurnOrganiser : MonoBehaviour {
 			apiary = npc.apiary;
 			backpack =  GameObject.Find("Canvas").GetComponentInChildren<UniquesBackpack>();
 		}
-
+		apiary.GetComponentInChildren<ApiaryOrganiser>().reInitBeeDict();
 		backpack.createDict();
 		
 		//have each of these things store their turn which is then called in here
 		map.doTurn(); //at the moment map.doTurn() does nothing. Probably update fog of war or something in future
 		int honeyUpdate = apiary.GetComponentInChildren<ApiaryOrganiser>().doTurn();
+		apiary.GetComponentInChildren<ApiaryOrganiser>().reInitBeeDict(); //need before as may apply to character with scenarios
+
 		player.UpdateResources(0,0,honeyUpdate);//put this into where the apiary is opened to make game smoother
 		player.doTurn(turnNumber);
 
@@ -53,6 +58,8 @@ public class TurnOrganiser : MonoBehaviour {
 				npc.openNpcScreen(false);
 			}
 		}
+
+		apiary.GetComponentInChildren<ApiaryOrganiser>().reInitBeeDict();
 
 		turnNumber += 1;
 		turnCount.GetComponentInChildren<Text>().text = "Day: " + turnNumber;
